@@ -34,6 +34,10 @@ def main():
     msg.header.update({'metric': args.metric})
     msg.header.update({'status': args.status})
 
+    for bs in ['summary', 'message', 'voqan', 'voname', 'roc']:
+        code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
+        exec code
+
     mq = DQS(path='/root/argoqueue')
     mq.add_message(msg)
 
