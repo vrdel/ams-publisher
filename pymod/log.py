@@ -10,15 +10,15 @@ class Logger(object):
     logger = None
 
     def _init_stdout(self):
-        lfs = '%(levelname)s ' + self._caller + ' %(message)s'
+        lfs = '%(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(lfs)
         lv = logging.INFO
 
         logging.basicConfig(format=lfs, level=lv, stream=sys.stdout)
         self.logger = logging.getLogger(logname)
 
-    def init_syslog(self):
-        lfs = '%(name)s[%(process)s]: ' + self._caller + ' %(levelname)s %s %(message)s'
+    def _init_syslog(self):
+        lfs = '%(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(lfs)
         lv = logging.INFO
 
@@ -27,8 +27,8 @@ class Logger(object):
         sh.setLevel(lv)
         self.logger.addHandler(sh)
 
-    def init_filelog(self):
-        lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s ' + self._caller + ' %(message)s'
+    def _init_filelog(self):
+        lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(fmt=lfs, datefmt='%Y-%m-%d %H:%M:%S')
         lv = logging.INFO
 
@@ -41,6 +41,8 @@ class Logger(object):
     def __init__(self, caller):
         self._caller = os.path.basename(caller)
         self._init_stdout()
+        self._init_filelog()
+        self._init_syslog()
 
     def get(self):
         return self.logger
