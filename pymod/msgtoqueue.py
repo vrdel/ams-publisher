@@ -3,10 +3,19 @@
 from messaging.message import Message
 from messaging.queue.dqs import DQS
 
+from argo_nagios_ams_publisher import config
+from argo_nagios_ams_publisher import log
+
 import argparse
+import sys
+
+conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 
 def main():
     parser = argparse.ArgumentParser()
+    lobj = log.Logger(sys.argv[0])
+    logger = lobj.get()
+    confopts = config.parse_config(conf, logger)
 
     # msg headers
     parser.add_argument('--timestamp', required=True, type=str)
@@ -38,7 +47,7 @@ def main():
         code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
-    mq = DQS(path='/root/argoqueue')
+    mq = DQS(path=confopts['queue'])
     mq.add_message(msg)
 
 main()

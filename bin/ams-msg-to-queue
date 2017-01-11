@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+from argo_nagios_ams_publisher import msgtoqueue
+
+msgtoqueue.main()
