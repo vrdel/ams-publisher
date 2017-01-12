@@ -40,9 +40,13 @@ class Logger(object):
 
     def __init__(self, caller):
         self._caller = os.path.basename(caller)
-        self._init_stdout()
-        self._init_filelog()
-        self._init_syslog()
+        try:
+            self._init_stdout()
+            self._init_filelog()
+            self._init_syslog()
+        except (OSError, IOError) as e:
+            sys.stderr.write('ERROR ' + self._caller + ' - ' + str(e) + '\n')
+            raise SystemExit(1)
 
     def get(self):
         return self.logger

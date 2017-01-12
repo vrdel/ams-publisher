@@ -8,9 +8,15 @@ from argo_nagios_ams_publisher import config
 from argo_nagios_ams_publisher import log
 
 import argparse
+import os
+import pwd
 import sys
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
+
+def seteuser(user):
+    os.setegid(user.pw_gid)
+    os.seteuid(user.pw_uid)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -34,6 +40,8 @@ def main():
 
     args = parser.parse_args()
 
+    seteuser(pwd.getpwnam(confopts['runasuser']))
+
     try:
         msg = Message()
         msg.header = dict()
@@ -49,11 +57,14 @@ def main():
             code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
             exec code
 
+        mq = DQS(path=confopts['queue'])
+        mq.add_message(msg)
+
     except MessageError as e:
         logger.error('Error constructing message - %s', repr(e))
 
-    else:
-        mq = DQS(path=confopts['queue'])
-        mq.add_message(msg)
+    except (OSError, IOError) as e:
+        logger.error(e)
+        raise SystemExit(1)
 
 main()
