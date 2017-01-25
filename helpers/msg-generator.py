@@ -15,7 +15,7 @@ from messaging.queue.dqs import DQS
 default_queue = '/var/spool/argo-nagios-ams-publisher/outgoing-messages/'
 default_user = 'nagios'
 
-def construct_msg():
+def construct_msg(session=None):
     statusl = ['OK', 'WARNING', 'MISSING', 'CRITICAL', 'UNKNOWN', 'DOWNTIME']
 
     try:
@@ -23,6 +23,8 @@ def construct_msg():
         msg.header = dict()
         msg.body = str()
 
+        if session:
+            msg.header.update({'*** SESSION ***': '*** {0} ***'.format(session)})
         msg.header.update({'service': generator.rndb64(10)})
         msg.header.update({'hostname': generator.rndb64(10)})
         msg.header.update({'metric': generator.rndb64(10)})
@@ -57,6 +59,7 @@ def seteuser(user):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--session', required=False, default=str(), type=str)
     parser.add_argument('--num', required=False, default=0, type=int)
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
@@ -67,7 +70,7 @@ def main():
     try:
         if args.num:
             for i in range(args.num):
-                msg = construct_msg()
+                msg = construct_msg(args.session)
                 queue_msg(msg, args.queue)
         else:
             while True:
