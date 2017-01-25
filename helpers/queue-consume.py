@@ -17,15 +17,61 @@ from messaging.queue.dqs import DQS
 default_queue = '/var/spool/argo-nagios-ams-publisher/outgoing-messages/'
 default_user = 'nagios'
 
+cqcalld = 1
+
+class QueueEmpty(Exception):
+    pass
+
 def seteuser(user):
     os.setegid(user.pw_gid)
     os.seteuid(user.pw_uid)
+
+def consume_queue(mq, num=0):
+    global cqcalld
+    print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
+
+    i, msgs = 0, []
+    def _get_msg():
+        if mq.count() > 0:
+            for name in mq:
+                if mq.lock(name):
+                    msgs.append(mq.get_message(name))
+                    mq.remove(name)
+                    break
+        else:
+            raise QueueEmpty
+
+    def _get_msgs():
+        if mq.count() > 0:
+            for name in mq:
+                if mq.lock(name):
+                    msgs.append(mq.get_message(name))
+                    mq.remove(name)
+        else:
+            raise QueueEmpty
+
+    try:
+        if num > 0:
+            while i < num:
+                _get_msg()
+                i += 1
+        else:
+            _get_msgs(mq)
+
+    except QueueEmpty:
+        print '{0} empty'.format(mq.path)
+
+    if msgs:
+        pprint.pprint(msgs)
+
+    cqcalld += 1
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sleep', required=False, default=0, type=float)
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
+    parser.add_argument('--num', required=False, default=0, type=int)
     args = parser.parse_args()
 
     seteuser(pwd.getpwnam(args.runas))
@@ -35,13 +81,10 @@ def main():
     try:
         if args.sleep > 0:
             while True:
-                if mq.count() > 0:
-                    for name in mq:
-                        if mq.lock(name):
-                            msgs.append(mq.get_message(name))
-                            mq.remove(name)
-                    pprint.pprint(msgs)
+                consume_queue(mq, args.num)
                 time.sleep(args.sleep)
+        else:
+            consume_queue(mq, args.num)
 
     except KeyboardInterrupt as e:
         raise SystemExit(0)
