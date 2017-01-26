@@ -46,8 +46,7 @@ def construct_msg(session=None):
 
 def queue_msg(msg, queue):
     try:
-        mq = DQS(path=queue)
-        mq.add_message(msg)
+        queue.add_message(msg)
 
     except Exception as e:
         sys.stderr.write(str(e) + '\n')
@@ -62,20 +61,23 @@ def main():
     parser.add_argument('--session', required=False, default=str(), type=str)
     parser.add_argument('--num', required=False, default=0, type=int)
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
+    parser.add_argument('--granularity', required=False, default=60, type=int)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
     args = parser.parse_args()
 
     seteuser(pwd.getpwnam(args.runas))
 
+    mq = DQS(path=args.queue, granularity=args.granularity)
+
     try:
         if args.num:
             for i in range(args.num):
                 msg = construct_msg(args.session)
-                queue_msg(msg, args.queue)
+                queue_msg(msg, mq)
         else:
             while True:
                 msg = construct_msg()
-                queue_msg(msg, args.queue)
+                queue_msg(msg, mq)
 
     except KeyboardInterrupt as e:
         raise SystemExit(0)
