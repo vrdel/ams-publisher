@@ -71,6 +71,7 @@ def main():
     parser.add_argument('--sleep', required=False, default=0, type=float)
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
+    parser.add_argument('--purge', required=False, default=False, type=bool)
     parser.add_argument('--num', required=False, default=0, type=int)
     args = parser.parse_args()
 
@@ -79,6 +80,8 @@ def main():
     msgs = []
     mq = DQS(path=args.queue)
     try:
+        if args.purge:
+            mq.purge()
         if args.sleep > 0:
             while True:
                 consume_queue(mq, args.num)
