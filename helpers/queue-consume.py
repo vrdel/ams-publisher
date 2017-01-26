@@ -2,7 +2,6 @@
 
 import argparse
 import datetime
-import messaging.generator as generator
 import os
 import pprint
 import pwd
