@@ -15,7 +15,7 @@ from messaging.queue.dqs import DQS
 default_queue = '/var/spool/argo-nagios-ams-publisher/outgoing-messages/'
 default_user = 'nagios'
 
-def construct_msg(session=None):
+def construct_msg(session=None, bodysize=40):
     statusl = ['OK', 'WARNING', 'MISSING', 'CRITICAL', 'UNKNOWN', 'DOWNTIME']
 
     try:
@@ -33,7 +33,7 @@ def construct_msg(session=None):
         msg.header.update({'status': random.choice(statusl)})
 
         msg.body += 'summary: %s\n' % generator.rndb64(20)
-        msg.body += 'message: %s\n' % generator.rndb64(40)
+        msg.body += 'message: %s\n' % generator.rndb64(bodysize)
         msg.body += 'vofqan: %s\n' % generator.rndb64(10)
         msg.body += 'voname: %s\n' % generator.rndb64(3)
         msg.body += 'roc: %s\n' % generator.rndb64(3)
@@ -63,6 +63,7 @@ def main():
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--granularity', required=False, default=60, type=int)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
+    parser.add_argument('--bodysize', required=False, default=40, type=int)
     args = parser.parse_args()
 
     seteuser(pwd.getpwnam(args.runas))
@@ -72,7 +73,7 @@ def main():
     try:
         if args.num:
             for i in range(args.num):
-                msg = construct_msg(args.session)
+                msg = construct_msg(args.session, args.bodysize)
                 queue_msg(msg, mq)
         else:
             while True:
