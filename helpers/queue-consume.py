@@ -16,7 +16,7 @@ from messaging.queue.dqs import DQS
 
 default_queue = '/var/spool/argo-nagios-ams-publisher/outgoing-messages/'
 default_user = 'nagios'
-
+args = None
 cqcalld = 1
 
 class QueueEmpty(Exception):
@@ -27,8 +27,9 @@ def seteuser(user):
     os.seteuid(user.pw_uid)
 
 def consume_queue(mq, num=0):
-    global cqcalld
-    print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
+    global cqcalld, args
+    if not args.noout:
+        print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
 
     i, msgs = 0, []
     def _get_msg():
@@ -56,12 +57,12 @@ def consume_queue(mq, num=0):
                 _get_msg()
                 i += 1
         else:
-            _get_msgs(mq)
+            _get_msgs()
 
     except QueueEmpty:
         print '{0} empty'.format(mq.path)
 
-    if msgs:
+    if msgs and not args.noout:
         pprint.pprint(msgs)
 
     cqcalld += 1
@@ -71,8 +72,10 @@ def main():
     parser.add_argument('--sleep', required=False, default=0, type=float)
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
-    parser.add_argument('--purge', required=False, default=False, type=bool)
+    parser.add_argument('--purge', required=False, action='store_true', default=False)
+    parser.add_argument('--noout', required=False, action='store_true', default=False)
     parser.add_argument('--num', required=False, default=0, type=int)
+    global args
     args = parser.parse_args()
 
     seteuser(pwd.getpwnam(args.runas))
