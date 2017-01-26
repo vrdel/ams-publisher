@@ -19,9 +19,6 @@ default_user = 'nagios'
 args = None
 cqcalld = 1
 
-class QueueEmpty(Exception):
-    pass
-
 def seteuser(user):
     os.setegid(user.pw_gid)
     os.seteuid(user.pw_uid)
@@ -31,36 +28,17 @@ def consume_queue(mq, num=0):
     if not args.noout:
         print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
 
-    i, msgs = 0, []
-    def _get_msg():
-        if mq.count() > 0:
-            for name in mq:
-                if mq.lock(name):
-                    msgs.append(mq.get_message(name))
-                    mq.remove(name)
-                    break
-        else:
-            raise QueueEmpty
-
-    def _get_msgs():
-        if mq.count() > 0:
-            for name in mq:
-                if mq.lock(name):
-                    msgs.append(mq.get_message(name))
-                    mq.remove(name)
-        else:
-            raise QueueEmpty
-
-    try:
-        if num > 0:
-            while i < num:
-                _get_msg()
-                i += 1
-        else:
-            _get_msgs()
-
-    except QueueEmpty:
+    i, msgs = 1, []
+    for name in mq:
+        if mq.lock(name):
+            msgs.append(mq.get_message(name))
+            mq.remove(name)
+            if num and i == num:
+                break
+            i += 1
+    else:
         print '{0} empty'.format(mq.path)
+
 
     if msgs and not args.noout:
         pprint.pprint(msgs)
