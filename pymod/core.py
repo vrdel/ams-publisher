@@ -14,12 +14,19 @@ class Run(object):
         self.thev = kwargs['ev']
         self._run()
 
+    def _cleanup(self):
+        raise SystemExit(0)
+
     def _run(self):
         self.msgl = list()
         self.nmsgs_consumed = 0
         mq = DQS(path=self.conf['queue'])
 
         while True:
+            if self.thev['term'].isSet():
+                self.thev['term'].clear()
+                self.cleanup()
+
             self.consume_queue(mq)
             # publish_msgs(msglist)
             time.sleep(1)
