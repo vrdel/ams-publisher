@@ -7,6 +7,8 @@ from messaging.message import Message
 from messaging.error import MessageError
 from messaging.queue.dqs import DQS
 
+from collections import deque
+
 class Run(object):
     def __init__(self, *args, **kwargs):
         self.log = kwargs['log']
@@ -18,7 +20,7 @@ class Run(object):
         raise SystemExit(0)
 
     def _run(self):
-        self.msgl = list()
+        self.msgl = deque()
         self.nmsgs_consumed = 0
         mq = DQS(path=self.conf['queue'])
 

@@ -13,6 +13,8 @@ from messaging.message import Message
 from messaging.error import MessageError
 from messaging.queue.dqs import DQS
 
+from collections import deque
+
 default_queue = '/var/spool/argo-nagios-ams-publisher/outgoing-messages/'
 default_user = 'nagios'
 args = None
@@ -27,7 +29,7 @@ def consume_queue(mq, num=0):
     if not args.noout:
         print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
 
-    i, msgs = 1, []
+    i, msgs = 1, deque()
     for name in mq:
         if mq.lock(name):
             msgs.append(mq.get_message(name))
