@@ -2,52 +2,69 @@ import datetime
 import os
 import sys
 import time
+from collections import deque
 
 from messaging.message import Message
 from messaging.error import MessageError
 from messaging.queue.dqs import DQS
 
-from collections import deque
-
 class Run(object):
     def __init__(self, *args, **kwargs):
         self.log = kwargs['log']
         self.conf = kwargs['conf']
-        self.thev = kwargs['ev']
+        self.ev = kwargs['ev']
+        self.inmem_q = deque()
+        kwargs.update({'inmem_q': self.inmem_q})
+        self.publisher = Publish(*args, **kwargs)
         self._run()
 
     def _cleanup(self):
         raise SystemExit(0)
 
     def _run(self):
-        self.msgl = deque()
         self.nmsgs_consumed = 0
-        mq = DQS(path=self.conf['queue'])
+        self.mq = DQS(path=self.conf['queue'])
 
         while True:
-            if self.thev['term'].isSet():
-                self.thev['term'].clear()
+            if self.ev['term'].isSet():
+                self.ev['term'].clear()
                 self.cleanup()
 
-            self.consume_queue(mq)
+            self.consume_dirq(1)
             # publish_msgs(msglist)
-            time.sleep(1)
+            self.publisher.write()
+            self.remove_queue_msg()
+            time.sleep(0.1)
 
-    def consume_queue(self, mq, num=0):
+    def consume_dirq(self, num=0):
         try:
-            for name in mq:
-                if mq.lock(name):
-                    self.msgl.append(mq.get_message(name))
-                    mq.remove(name)
+            i = 0
+            for name in self.mq:
+                if self.mq.lock(name):
+                    self.inmem_q.append((name, self.mq.get_message(name)))
+                    self.nmsgs_consumed += 1
+                    i += 1
                     if num and i == num:
                         break
-                    self.nmsgs_consumed += 1
             else:
-                self.log.info('{0} empty'.format(mq.path))
+                self.log.info('{0} empty'.format(self.mq.path))
 
         except Exception as e:
             self.log.error(e)
 
-    def publish_msgs(self, msglist):
-        pass
+    def remove_queue_msg(self):
+        for m in self.inmem_q:
+            self.mq.remove(m[0])
+        self.inmem_q.clear()
+
+
+class Publish(Run):
+    def __init__(self, *args, **kwargs):
+        for d in kwargs.iterkeys():
+            code = "self.{0} = kwargs['{0}']".format(d)
+            exec code
+
+    def write(self):
+        with open('/root/msgs_file', 'a') as fp:
+            fp.writelines(['{0}\n'.format(str(m[1])) for m in self.inmem_q])
 
