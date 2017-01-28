@@ -22,35 +22,35 @@ class Run(object):
         raise SystemExit(0)
 
     def _run(self):
-        self.nmsgs_consumed = 0
+        self.nmsgs_consumed, self.sess_consumed = 0, 0
         self.mq = DQS(path=self.conf['queue'])
-
         while True:
             if self.ev['term'].isSet():
                 self.ev['term'].clear()
                 self.cleanup()
 
-            self.consume_dirq(1)
-            # publish_msgs(msglist)
-            self.publisher.write()
-            self.remove_queue_msg()
-            time.sleep(0.1)
+            if self.consume_dirq(100):
+                if self.publisher.write():
+                    self.remove_queue_msg()
+            time.sleep(0.5)
 
     def consume_dirq(self, num=0):
         try:
-            i = 0
             for name in self.mq:
                 if self.mq.lock(name):
                     self.inmem_q.append((name, self.mq.get_message(name)))
                     self.nmsgs_consumed += 1
-                    i += 1
-                    if num and i == num:
-                        break
+                    self.sess_consumed += 1
+                    if num and self.sess_consumed == num:
+                       self.sess_consumed = 0
+                       return True
             else:
                 self.log.info('{0} empty'.format(self.mq.path))
 
         except Exception as e:
             self.log.error(e)
+
+        return False
 
     def remove_queue_msg(self):
         for m in self.inmem_q:
@@ -67,4 +67,5 @@ class Publish(Run):
     def write(self):
         with open('/root/msgs_file', 'a') as fp:
             fp.writelines(['{0}\n'.format(str(m[1])) for m in self.inmem_q])
+        return True
 
