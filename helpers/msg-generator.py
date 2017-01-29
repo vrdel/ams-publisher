@@ -63,6 +63,7 @@ def main():
     parser.add_argument('--queue', required=False, default=default_queue, type=str)
     parser.add_argument('--granularity', required=False, default=60, type=int)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
+    parser.add_argument('--noout', required=False, action='store_true', default=False)
     parser.add_argument('--bodysize', required=False, default=40, type=int)
     args = parser.parse_args()
 
@@ -75,6 +76,8 @@ def main():
             for i in range(args.num):
                 msg = construct_msg(args.session, args.bodysize)
                 queue_msg(msg, mq)
+                if not args.noout:
+                    print msg
         else:
             while True:
                 msg = construct_msg()
