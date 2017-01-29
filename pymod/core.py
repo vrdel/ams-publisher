@@ -37,8 +37,12 @@ class Run(object):
                 self.cleanup()
 
             if self.consume_dirq_msgs(max(self.msgbulk, self.queuerate)):
-                if self.publisher.write(self.msgbulk):
+                ret, published = self.publisher.write(self.msgbulk)
+                if ret:
                     self.remove_dirq_msgs()
+                elif published:
+                    self.remove_dirq_msgs(published)
+                    self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
                 else:
                     self.unlock_dirq_msgs()
 
@@ -62,13 +66,15 @@ class Run(object):
 
         return False
 
-    def unlock_dirq_msgs(self):
-        for m in self.inmemq:
+    def unlock_dirq_msgs(self, msgs=None):
+        msgl = msgs if msgs else self.inmemq
+        for m in msgl:
             self.dirq.unlock(m[0])
         self.inmemq.clear()
 
-    def remove_dirq_msgs(self):
-        for m in self.inmemq:
+    def remove_dirq_msgs(self, msgs=None):
+        msgl = msgs if msgs else self.inmemq
+        for m in msgl:
             self.dirq.remove(m[0])
         self.inmemq.clear()
 
@@ -81,13 +87,18 @@ class Publish(Run):
         self.init_confopts(kwargs['conf'])
 
     def write(self, num=0):
+        published = set()
         try:
             for i in range(self.queuerate/self.msgbulk):
                 with open('/root/msgs_file', 'a') as fp:
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.msgbulk)])
+                published.update([self.inmemq[e][0] for e in range(self.msgbulk)])
+
                 self.inmemq.rotate(-self.msgbulk)
-            return True
+
+            return True, published
 
         except Exception as e:
-            return False
+            self.log.error(e)
+            return False, published
