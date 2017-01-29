@@ -1,7 +1,7 @@
 import ConfigParser
 
 def parse_config(conffile, logger):
-    reqsections = set(['general', 'ingestion'])
+    reqsections = set(['general', 'messaging'])
     confopts = dict()
 
     try:
@@ -16,7 +16,19 @@ def parse_config(conffile, logger):
             for section in config.sections():
                 if section.startswith('General'):
                     confopts['queue'] = config.get(section, 'Queue')
+                    confopts['queuerate'] = int(config.get(section, 'QueueRate'))
                     confopts['runasuser'] = config.get(section, 'RunAsUser')
+                if section.startswith('Messaging'):
+                    confopts['msghost'] = config.get(section, 'Host')
+                    confopts['msgtoken'] = config.get(section, 'Token')
+                    confopts['msgtenant'] = config.get(section, 'Tenant')
+                    confopts['msgbulk'] = int(config.get(section, 'BulkSize'))
+
+            if confopts['msgbulk'] < confopts['queuerate'] and \
+                    confopts['queuerate'] % confopts['msgbulk']:
+                logger.error('QueueRate should be multiple of BulkSize')
+                raise SystemExit(1)
+
         else:
             logger.error('Missing %s' % conffile)
             raise SystemExit(1)
