@@ -7,6 +7,7 @@ import random
 import sys
 import os
 import pwd
+import time
 
 from messaging.message import Message
 from messaging.error import MessageError
@@ -64,6 +65,7 @@ def main():
     parser.add_argument('--granularity', required=False, default=60, type=int)
     parser.add_argument('--runas', required=False, default=default_user, type=str)
     parser.add_argument('--noout', required=False, action='store_true', default=False)
+    parser.add_argument('--sleep', required=False, default=0, type=float)
     parser.add_argument('--bodysize', required=False, default=40, type=int)
     args = parser.parse_args()
 
@@ -80,8 +82,12 @@ def main():
                     print msg
         else:
             while True:
-                msg = construct_msg()
+                msg = construct_msg(args.session, args.bodysize)
                 queue_msg(msg, mq)
+                if not args.noout:
+                    print msg
+                if args.sleep:
+                    time.sleep(args.sleep)
 
     except KeyboardInterrupt as e:
         raise SystemExit(0)
