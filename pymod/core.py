@@ -1,7 +1,9 @@
 import datetime
+import decimal
 import os
 import sys
 import time
+
 from collections import deque
 
 from messaging.message import Message
@@ -46,20 +48,26 @@ class Run(object):
                 else:
                     self.unlock_dirq_msgs()
 
-            time.sleep(0.5)
+            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
 
     def consume_dirq_msgs(self, num=0):
+        def _inmemq_append(elem):
+            self.inmemq.append(elem)
+            self.nmsgs_consumed += 1
+            self.sess_consumed += 1
         try:
             for name in self.dirq:
-                if self.dirq.lock(name):
-                    self.inmemq.append((name, self.dirq.get_message(name)))
-                    self.nmsgs_consumed += 1
-                    self.sess_consumed += 1
+                already_lckd = os.path.exists(self.dirq.get_path(name))
+                if not already_lckd and self.dirq.lock(name):
+                    _inmemq_append((name, self.dirq.get_message(name)))
                     if num and self.sess_consumed == num:
-                       self.sess_consumed = 0
-                       return True
-            else:
-                self.log.info('{0} empty'.format(self.dirq.path))
+                        self.sess_consumed = 0
+                        return True
+                elif already_lckd:
+                    _inmemq_append((name, self.dirq.get_message(name)))
+                    if num and self.sess_consumed == num:
+                        self.sess_consumed = 0
+                        return True
 
         except Exception as e:
             self.log.error(e)
@@ -67,17 +75,22 @@ class Run(object):
         return False
 
     def unlock_dirq_msgs(self, msgs=None):
-        msgl = msgs if msgs else self.inmemq
-        for m in msgl:
-            self.dirq.unlock(m[0])
-        self.inmemq.clear()
+        try:
+            msgl = msgs if msgs else self.inmemq
+            for m in msgl:
+                self.dirq.unlock(m[0])
+            self.inmemq.clear()
+        except (OSError, IOError) as e:
+            self.log.error(e)
 
     def remove_dirq_msgs(self, msgs=None):
-        msgl = msgs if msgs else self.inmemq
-        for m in msgl:
-            self.dirq.remove(m[0])
-        self.inmemq.clear()
-
+        try:
+            msgl = msgs if msgs else self.inmemq
+            for m in msgl:
+                self.dirq.remove(m[0])
+            self.inmemq.clear()
+        except (OSError, IOError) as e:
+            self.log.error(e)
 
 class Publish(Run):
     def __init__(self, *args, **kwargs):
