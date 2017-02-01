@@ -17,7 +17,9 @@ class Run(object):
         self.init_confopts(kwargs['conf'])
 
         self.inmemq = deque()
-        kwargs.update({'inmemq': self.inmemq})
+        self.pubnumloop = 1 if self.msgbulk > self.queuerate \
+                          else self.queuerate / self.msgbulk
+        kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop})
         self.publisher = Publish(*args, **kwargs)
         self.run()
 
@@ -92,6 +94,7 @@ class Run(object):
         except (OSError, IOError) as e:
             self.log.error(e)
 
+
 class Publish(Run):
     def __init__(self, *args, **kwargs):
         for d in kwargs.iterkeys():
@@ -102,7 +105,7 @@ class Publish(Run):
     def write(self, num=0):
         published = set()
         try:
-            for i in range(self.queuerate/self.msgbulk):
+            for i in range(self.pubnumloop):
                 with open('/root/msgs_file', 'a') as fp:
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.msgbulk)])
