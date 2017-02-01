@@ -33,6 +33,7 @@ class Run(object):
 
     def run(self):
         self.nmsgs_consumed, self.sess_consumed = 0, 0
+        self.seenmsgs = set()
         self.dirq = DQS(path=self.queue)
 
         while True:
@@ -57,18 +58,21 @@ class Run(object):
             self.inmemq.append(elem)
             self.nmsgs_consumed += 1
             self.sess_consumed += 1
+            if num and self.sess_consumed == num:
+                self.sess_consumed = 0
+                self.seenmsgs.clear()
+                return True
         try:
             for name in self.dirq:
+                if name in self.seenmsgs:
+                    continue
+                self.seenmsgs.update([name])
                 already_lckd = os.path.exists(self.dirq.get_path(name))
                 if not already_lckd and self.dirq.lock(name):
-                    _inmemq_append((name, self.dirq.get_message(name)))
-                    if num and self.sess_consumed == num:
-                        self.sess_consumed = 0
+                    if _inmemq_append((name, self.dirq.get_message(name))):
                         return True
                 elif already_lckd:
-                    _inmemq_append((name, self.dirq.get_message(name)))
-                    if num and self.sess_consumed == num:
-                        self.sess_consumed = 0
+                    if _inmemq_append((name, self.dirq.get_message(name))):
                         return True
 
         except Exception as e:
