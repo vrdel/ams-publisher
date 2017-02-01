@@ -4,10 +4,10 @@ import os
 import sys
 import time
 
+from argo_nagios_ams_publisher.threads import Purger
 from collections import deque
-
-from messaging.message import Message
 from messaging.error import MessageError
+from messaging.message import Message
 from messaging.queue.dqs import DQS
 
 class Run(object):
@@ -16,11 +16,14 @@ class Run(object):
         self.ev = kwargs['ev']
         self.init_confopts(kwargs['conf'])
 
+        self.dirq = DQS(path=self.queue)
         self.inmemq = deque()
         self.pubnumloop = 1 if self.msgbulk > self.queuerate \
                           else self.queuerate / self.msgbulk
-        kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop})
+        kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
+                       'dirq': self.dirq})
         self.publisher = Publish(*args, **kwargs)
+        self.purger = Purger(*args, **kwargs)
         self.run()
 
     def init_confopts(self, confopts):
@@ -34,7 +37,6 @@ class Run(object):
     def run(self):
         self.nmsgs_consumed, self.sess_consumed = 0, 0
         self.seenmsgs = set()
-        self.dirq = DQS(path=self.queue)
 
         while True:
             if self.ev['term'].isSet():
