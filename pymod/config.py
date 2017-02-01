@@ -1,7 +1,7 @@
 import ConfigParser
 
 def parse_config(conffile, logger):
-    reqsections = set(['general', 'messaging'])
+    reqsections = set(['dirq', 'messaging', 'general'])
     confopts = dict()
 
     try:
@@ -15,9 +15,15 @@ def parse_config(conffile, logger):
 
             for section in config.sections():
                 if section.startswith('General'):
+                    confopts['runasuser'] = config.get(section, 'RunAsUser')
+                if section.startswith('DirQ'):
                     confopts['queue'] = config.get(section, 'Queue')
                     confopts['queuerate'] = int(config.get(section, 'QueueRate'))
-                    confopts['runasuser'] = config.get(section, 'RunAsUser')
+                    confopts['purge'] = bool(config.get(section, 'Purge'))
+                    confopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
+                    confopts['maxtemp'] = int(config.get(section, 'maxtemp'))
+                    confopts['maxlock'] = int(config.get(section, 'MaxLock'))
+                    confopts['granularity'] = int(config.get(section, 'Granularity'))
                 if section.startswith('Messaging'):
                     confopts['msghost'] = config.get(section, 'Host')
                     confopts['msgtoken'] = config.get(section, 'Token')
