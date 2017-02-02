@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from argo_nagios_ams_publisher import config
-from argo_nagios_ams_publisher import core
-from argo_nagios_ams_publisher import log
+from argo_nagios_ams_publisher.config import parse_config
+from argo_nagios_ams_publisher.log import Logger
+from argo_nagios_ams_publisher.run import Run
 
 import argparse
 import daemon
@@ -43,7 +43,7 @@ def daemon_start(context_daemon, logger, loghandle, events, confopts, restart=Fa
 
     context_daemon.open()
     with context_daemon:
-        core.Run(conf=confopts, log=logger, ev=events)
+        Run(conf=confopts, log=logger, ev=events)
 
 def daemon_stop(context_daemon, logger, restart=False):
     if context_daemon.pidfile.is_locked():
@@ -88,7 +88,7 @@ def daemon_status(context_daemon, logger):
         return 3
 
 def main():
-    lobj = log.Logger(sys.argv[0])
+    lobj = Logger(sys.argv[0])
     logger = lobj.get()
     loghandle = None
     events = dict()
@@ -96,7 +96,7 @@ def main():
     termev = threading.Event()
     events.update({'term': termev})
 
-    confopts = config.parse_config(conffile, logger)
+    confopts = parse_config(conffile, logger)
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)
@@ -108,7 +108,7 @@ def main():
 
     if args.nofork:
         try:
-            core.Run(conf=confopts, log=logger, ev=events)
+            Run(conf=confopts, log=logger, ev=events)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
