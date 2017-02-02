@@ -16,7 +16,7 @@ import threading
 conffile = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 
-def daemon_start(context_daemon, logger, loghandle, events, confopts, restart=False):
+def daemon_start(context_daemon, logger, events, confopts, restart=False):
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
@@ -26,9 +26,6 @@ def daemon_start(context_daemon, logger, loghandle, events, confopts, restart=Fa
             return 0
         except psutil.NoSuchProcess:
             context_daemon.pidfile.break_lock()
-
-    if loghandle:
-        context_daemon.files_preserve = [loghandle]
 
     def sigtermhandle(signum, frame):
         logger.info('Received SIGTERM')
@@ -87,10 +84,28 @@ def daemon_status(context_daemon, logger):
         logger.info('Not running')
         return 3
 
+def daemonizer(args, logger, events, confopts):
+    context_daemon = daemon.DaemonContext()
+    context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
+
+    if args.daemon == 'start':
+        daemon_start(context_daemon, logger, events, confopts)
+
+    elif args.daemon == 'stop':
+        ret = daemon_stop(context_daemon, logger)
+        raise SystemExit(ret)
+
+    elif args.daemon == 'restart':
+        daemon_stop(context_daemon, logger, restart=True)
+        daemon_start(context_daemon, logger, events, confopts, restart=True)
+
+    elif args.daemon == 'status':
+        ret = daemon_status(context_daemon, logger)
+        raise SystemExit(ret)
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
-    loghandle = None
     events = dict()
 
     termev = threading.Event()
@@ -113,22 +128,6 @@ def main():
             raise SystemExit(1)
 
     elif args.daemon:
-        context_daemon = daemon.DaemonContext()
-        context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
-
-        if args.daemon == 'start':
-            daemon_start(context_daemon, logger, loghandle, events, confopts)
-
-        elif args.daemon == 'stop':
-            ret = daemon_stop(context_daemon, logger)
-            raise SystemExit(ret)
-
-        elif args.daemon == 'restart':
-            daemon_stop(context_daemon, logger, restart=True)
-            daemon_start(context_daemon, logger, loghandle, events, confopts, restart=True)
-
-        elif args.daemon == 'status':
-            ret = daemon_status(context_daemon, logger)
-            raise SystemExit(ret)
+        daemonizer(args, logger, events, confopts)
 
 main()
