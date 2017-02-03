@@ -8,9 +8,10 @@ import argparse
 import daemon
 import daemon.pidlockfile
 import os
-import sys
-import signal
 import psutil
+import pwd
+import signal
+import sys
 import threading
 
 conffile = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
@@ -85,6 +86,17 @@ def daemon_status(context_daemon, logger):
         return 3
 
 def daemonizer(args, logger, events, confopts):
+    try:
+        if not os.path.exists(os.path.dirname(pidfile)):
+            dirp = os.path.dirname(pidfile)
+            os.makedirs(dirp)
+            uid, gid = pwd.getpwnam(confopts['runasuser'])[2], pwd.getpwnam(confopts['runasuser'])[3]
+            os.chown(dirp, uid, gid)
+    except (OSError, IOError) as e:
+        if e.args[0] != errno.EEXIST:
+            logger.error('%s %s %s' % (os.strerror(e.args[0]), e.args[1], d))
+            raise SystemExit(1)
+
     context_daemon = daemon.DaemonContext()
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
 
