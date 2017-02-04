@@ -1,39 +1,60 @@
 import ConfigParser
 
 def parse_config(conffile, logger):
-    reqsections = set(['dirq', 'messaging', 'general'])
+    reqsections = set(['dirq_', 'topic_', 'general'])
     confopts = dict()
 
     try:
         config = ConfigParser.ConfigParser()
         if config.read(conffile):
-            sections = map(lambda v: v.lower(), config.sections())
+            pairedsects = ['{0}_'.format(s.lower().split('_', 1)[0]) for s in config.sections() if '_' in s]
 
-            diff = reqsections.difference(sections)
+            if len(pairedsects) % 2:
+                logger.error('Unpaired DirQ and Topic sections')
+                raise SystemExit(1)
+
+            commonsects = [s.lower() for s in config.sections() if '_' not in s]
+            diff = reqsections.difference(set(commonsects + pairedsects))
             if diff:
                 raise ConfigParser.NoSectionError((' '.join(diff)))
 
+            queues, topics = dict(), dict()
             for section in config.sections():
                 if section.startswith('General'):
-                    confopts['runasuser'] = config.get(section, 'RunAsUser')
-                if section.startswith('DirQ'):
-                    confopts['queue'] = config.get(section, 'Queue')
-                    confopts['queuerate'] = int(config.get(section, 'QueueRate'))
-                    confopts['purge'] = bool(config.get(section, 'Purge'))
-                    confopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
-                    confopts['maxtemp'] = int(config.get(section, 'maxtemp'))
-                    confopts['maxlock'] = int(config.get(section, 'MaxLock'))
-                    confopts['granularity'] = int(config.get(section, 'Granularity'))
-                if section.startswith('Messaging'):
-                    confopts['msghost'] = config.get(section, 'Host')
-                    confopts['msgtoken'] = config.get(section, 'Token')
-                    confopts['msgtenant'] = config.get(section, 'Tenant')
-                    confopts['msgbulk'] = int(config.get(section, 'BulkSize'))
+                    confopts['general'] = {'runasuser': config.get(section, 'RunAsUser')}
+                if section.startswith('DirQ_'):
+                    dirqopts = dict()
+                    qname = section.split('_', 1)[1].lower()
+                    dirqopts['queue'] = config.get(section, 'Queue')
+                    dirqopts['queuerate'] = int(config.get(section, 'QueueRate'))
+                    dirqopts['purge'] = bool(config.get(section, 'Purge'))
+                    dirqopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
+                    dirqopts['maxtemp'] = int(config.get(section, 'MaxTemp'))
+                    dirqopts['maxlock'] = int(config.get(section, 'MaxLock'))
+                    dirqopts['granularity'] = int(config.get(section, 'Granularity'))
+                    queues[qname] = dirqopts
+                if section.startswith('Topic_'):
+                    topts = dict()
+                    tname = section.split('_', 1)[1].lower()
+                    topts['host'] = config.get(section, 'Host')
+                    topts['key'] = config.get(section, 'Key')
+                    topts['project'] = config.get(section, 'Project')
+                    topts['bulk'] = int(config.get(section, 'BulkSize'))
+                    topics[tname] = topts
 
-            if confopts['msgbulk'] < confopts['queuerate'] and \
-                    confopts['queuerate'] % confopts['msgbulk']:
-                logger.error('QueueRate should be multiple of BulkSize')
-                raise SystemExit(1)
+            for k, v in queues.iteritems():
+                if k not in topics:
+                    raise ConfigParser.NoSectionError('No topic topic_%s defined' % k)
+                    raise SystemExit(1)
+
+                if topics[k]['bulk'] < queues[k]['queuerate'] and \
+                        queues[k]['queuerate'] % topics[k]['bulk']:
+                    logger.error('dirq_%s: QueueRate should be multiple of BulkSize' % k)
+                    raise SystemExit(1)
+
+            confopts['queues'] = queues
+            confopts['topics'] = topics
+            return confopts
 
         else:
             logger.error('Missing %s' % conffile)
