@@ -39,8 +39,7 @@ class ConsumerDirQ(Process):
         self.seenmsgs = set()
 
         while True:
-            if self.ev['term'].isSet():
-                self.ev['term'].clear()
+            if self.ev['term'].is_set():
                 self.cleanup()
 
             if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
@@ -100,18 +99,31 @@ class ConsumerDirQ(Process):
         except (OSError, IOError) as e:
             self.log.error(e)
 
-class Run(object):
-    def __init__(self, *args, **kwargs):
-        self.log = kwargs['log']
-        self.ev = kwargs['ev']
-        self.consumers = list()
+def init_dirq_consume(**kwargs):
+    log = kwargs['log']
+    ev = kwargs['ev']
+    evsleep = 2
+    consumers = list()
 
-        for k, v in kwargs['conf']['queues'].iteritems():
-            kw = dict()
-            kw.update({'name': k})
-            kw.update(kwargs['conf']['queues'][k])
-            kw.update(kwargs['conf']['topics'][k])
-            kw.update({'log': kwargs['log']})
-            kw.update({'ev': kwargs['ev']})
-            self.consumers.append(ConsumerDirQ(name=k, kwargs=kw))
-            self.consumers[-1].start()
+    for k, v in kwargs['conf']['queues'].iteritems():
+        kw = dict()
+
+        kw.update({'name': k})
+        kw.update(kwargs['conf']['queues'][k])
+        kw.update(kwargs['conf']['topics'][k])
+        kw.update({'log': kwargs['log']})
+        kw.update({'ev': kwargs['ev']})
+        kw.update({'evsleep': evsleep})
+
+        consumers.append(ConsumerDirQ(name=k, kwargs=kw))
+        consumers[-1].start()
+
+    while True:
+        if ev['term'].is_set():
+            ev['termth'].set()
+
+            for c in consumers:
+                c.join(1)
+            raise SystemExit(0)
+
+        time.sleep(evsleep)

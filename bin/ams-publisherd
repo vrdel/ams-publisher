@@ -2,7 +2,7 @@
 
 from argo_nagios_ams_publisher.config import parse_config
 from argo_nagios_ams_publisher.log import Logger
-from argo_nagios_ams_publisher.run import Run
+from argo_nagios_ams_publisher.run import init_dirq_consume
 
 import argparse
 import daemon
@@ -12,6 +12,7 @@ import psutil
 import pwd
 import signal
 import sys
+import multiprocessing
 import threading
 
 conffile = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
@@ -29,7 +30,6 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
             context_daemon.pidfile.break_lock()
 
     def sigtermhandle(signum, frame):
-        logger.info('Received SIGTERM')
         events['term'].set()
 
     context_daemon.signal_map = {
@@ -41,7 +41,7 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
 
     context_daemon.open()
     with context_daemon:
-        Run(conf=confopts, log=logger, ev=events)
+        init_dirq_consume(conf=confopts, log=logger, ev=events)
 
 def daemon_stop(context_daemon, logger, restart=False):
     if context_daemon.pidfile.is_locked():
@@ -90,7 +90,8 @@ def daemonizer(args, logger, events, confopts):
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
             os.makedirs(dirp)
-            uid, gid = pwd.getpwnam(confopts['runasuser'])[2], pwd.getpwnam(confopts['runasuser'])[3]
+            user = confopts['general']['runasuser']
+            uid, gid = pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
             os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
@@ -120,8 +121,9 @@ def main():
     logger = lobj.get()
     events = dict()
 
-    termev = threading.Event()
-    events.update({'term': termev})
+    termev = multiprocessing.Event()
+    termevth = threading.Event()
+    events.update({'term': termev, 'termth': termevth})
 
     confopts = parse_config(conffile, logger)
 
@@ -135,7 +137,7 @@ def main():
 
     if args.nofork:
         try:
-            Run(conf=confopts, log=logger, ev=events)
+            init_dirq_consume(conf=confopts, log=logger, ev=events)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
