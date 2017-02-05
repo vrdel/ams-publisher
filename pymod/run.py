@@ -10,22 +10,21 @@ from collections import deque
 from messaging.error import MessageError
 from messaging.message import Message
 from messaging.queue.dqs import DQS
+from multiprocessing import Process
 
-class Run(object):
+class ConsumerDirQ(Process):
     def __init__(self, *args, **kwargs):
-        self.log = kwargs['log']
-        self.ev = kwargs['ev']
-        self.init_confopts(kwargs['conf'])
+        Process.__init__(self, *args, **kwargs)
+        self.init_confopts(kwargs['kwargs'])
 
         self.dirq = DQS(path=self.queue)
         self.inmemq = deque()
-        self.pubnumloop = 1 if self.msgbulk > self.queuerate \
-                          else self.queuerate / self.msgbulk
-        kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
-                       'dirq': self.dirq})
+        self.pubnumloop = 1 if self.bulk > self.queuerate \
+                          else self.queuerate / self.bulk
+        kwargs['kwargs'].update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
+                                 'dirq': self.dirq})
         self.publisher = Publish(*args, **kwargs)
         self.purger = Purger(*args, **kwargs)
-        self.run()
 
     def init_confopts(self, confopts):
         for k in confopts.iterkeys():
@@ -44,8 +43,8 @@ class Run(object):
                 self.ev['term'].clear()
                 self.cleanup()
 
-            if self.consume_dirq_msgs(max(self.msgbulk, self.queuerate)):
-                ret, published = self.publisher.write(self.msgbulk)
+            if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
+                ret, published = self.publisher.write(self.bulk)
                 if ret:
                     self.remove_dirq_msgs()
                 elif published:
@@ -101,4 +100,18 @@ class Run(object):
         except (OSError, IOError) as e:
             self.log.error(e)
 
+class Run(object):
+    def __init__(self, *args, **kwargs):
+        self.log = kwargs['log']
+        self.ev = kwargs['ev']
+        self.consumers = list()
 
+        for k, v in kwargs['conf']['queues'].iteritems():
+            kw = dict()
+            kw.update({'name': k})
+            kw.update(kwargs['conf']['queues'][k])
+            kw.update(kwargs['conf']['topics'][k])
+            kw.update({'log': kwargs['log']})
+            kw.update({'ev': kwargs['ev']})
+            self.consumers.append(ConsumerDirQ(name=k, kwargs=kw))
+            self.consumers[-1].start()

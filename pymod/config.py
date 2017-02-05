@@ -39,6 +39,7 @@ def parse_config(conffile, logger):
                     topts['host'] = config.get(section, 'Host')
                     topts['key'] = config.get(section, 'Key')
                     topts['project'] = config.get(section, 'Project')
+                    topts['topic'] = config.get(section, 'Topic')
                     topts['bulk'] = int(config.get(section, 'BulkSize'))
                     topics[tname] = topts
 
