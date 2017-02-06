@@ -24,6 +24,8 @@ def main():
     logger = lobj.get()
     confopts = config.parse_config(conf, logger)
 
+    parser.add_argument('--queue', required=True, type=str)
+
     # msg headers
     parser.add_argument('--timestamp', required=True, type=str)
     parser.add_argument('--service', required=True, type=str)
@@ -40,7 +42,7 @@ def main():
 
     args = parser.parse_args()
 
-    seteuser(pwd.getpwnam(confopts['runasuser']))
+    seteuser(pwd.getpwnam(confopts['general']['runasuser']))
 
     try:
         msg = Message()
@@ -57,7 +59,7 @@ def main():
             code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
             exec code
 
-        mq = DQS(path=confopts['queue'])
+        mq = DQS(path=args.queue)
         mq.add_message(msg)
 
     except MessageError as e:
