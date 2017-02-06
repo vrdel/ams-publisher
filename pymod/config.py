@@ -2,7 +2,7 @@ import ConfigParser
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 
-def parse_config(logger):
+def parse_config(logger=None):
     reqsections = set(['dirq_', 'topic_', 'general'])
     confopts = dict()
 
@@ -12,7 +12,10 @@ def parse_config(logger):
             pairedsects = ['{0}_'.format(s.lower().split('_', 1)[0]) for s in config.sections() if '_' in s]
 
             if len(pairedsects) % 2:
-                logger.error('Unpaired DirQ and Topic sections')
+                if logger:
+                    logger.error('Unpaired DirQ and Topic sections')
+                else:
+                    sys.stderr.write('Unpaired DirQ and Topic sections\n')
                 raise SystemExit(1)
 
             commonsects = [s.lower() for s in config.sections() if '_' not in s]
@@ -52,7 +55,10 @@ def parse_config(logger):
 
                 if topics[k]['bulk'] < queues[k]['queuerate'] and \
                         queues[k]['queuerate'] % topics[k]['bulk']:
-                    logger.error('dirq_%s: QueueRate should be multiple of BulkSize' % k)
+                    if logger:
+                        logger.error('dirq_%s: QueueRate should be multiple of BulkSize' % k)
+                    else:
+                        sys.stderr.write('dirq_%s: QueueRate should be multiple of BulkSize\n' % k)
                     raise SystemExit(1)
 
             confopts['queues'] = queues
@@ -60,17 +66,24 @@ def parse_config(logger):
             return confopts
 
         else:
-            logger.error('Missing %s' % conf)
+            if logger:
+                logger.error('Missing %s' % conf)
+            else:
+                sys.stderr.write('Missing %s\n' % conf)
             raise SystemExit(1)
 
     except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
         logger.error(e)
         raise SystemExit(1)
 
-    except (ConfigParser.MissingSectionHeaderError, SystemExit) as e:
+    except (ConfigParser.MissingSectionHeaderError, ConfigParser.ParsingError, SystemExit) as e:
         if getattr(e, 'filename', False):
-            logger.error(e.filename + ' is not a valid configuration file')
-            logger.error(e.message)
+            if logger:
+                logger.error(e.filename + ' is not a valid configuration file')
+                logger.error(' '.join(e.args))
+            else:
+                sys.stderr.write(e.filename + ' is not a valid configuration file\n')
+                sys.stderr.write(' '.join(e.args) + '\n')
         raise SystemExit(1)
 
     return confopts
