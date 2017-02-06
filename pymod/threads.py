@@ -15,10 +15,8 @@ class Purger(threading.Thread):
         i = 0
         while True:
             if self.ev['termth'].is_set():
-                self.log.info('Purger: SIGTERM received')
                 break
             if i == self.purgeeverysec:
-                self.log.info('try purge')
                 self.dirq.purge(maxtemp=self.maxtemp, maxlock=self.maxlock)
                 i = 0
             time.sleep(self.evsleep)

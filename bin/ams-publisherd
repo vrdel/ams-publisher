@@ -15,7 +15,6 @@ import sys
 import multiprocessing
 import threading
 
-conffile = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 
 def daemon_start(context_daemon, logger, events, confopts, restart=False):
@@ -30,7 +29,9 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
             context_daemon.pidfile.break_lock()
 
     def sigtermhandle(signum, frame):
+        logger.info('SIGTERM received')
         events['term'].set()
+        events['termth'].set()
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle
@@ -54,11 +55,11 @@ def daemon_stop(context_daemon, logger, restart=False):
             if not restart:
                 logger.info('Not running - cleaning stale pidfile')
         else:
-            if not restart:
-                logger.info('Stopping (%s)' % pid)
-
             process.terminate()
             pgone, palive = psutil.wait_procs([process])
+
+            if not restart:
+                logger.info('Stopping (%s)' % pid)
 
             for p in palive:
                 p.kill()

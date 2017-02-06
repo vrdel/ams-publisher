@@ -120,8 +120,6 @@ def init_dirq_consume(**kwargs):
 
     while True:
         if ev['term'].is_set():
-            ev['termth'].set()
-
             for c in consumers:
                 c.join(1)
             raise SystemExit(0)
