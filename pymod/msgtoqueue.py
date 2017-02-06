@@ -22,7 +22,7 @@ def main():
     parser = argparse.ArgumentParser()
     lobj = log.Logger(sys.argv[0])
     logger = lobj.get()
-    confopts = config.parse_config(conf, logger)
+    confopts = config.parse_config(logger)
 
     parser.add_argument('--queue', required=True, type=str)
 
@@ -59,7 +59,8 @@ def main():
             code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
             exec code
 
-        mq = DQS(path=args.queue)
+        granularity = config.get_queue_granul(args.queue)
+        mq = DQS(path=args.queue, granularity=granularity)
         mq.add_message(msg)
 
     except MessageError as e:
