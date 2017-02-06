@@ -125,7 +125,7 @@ def main():
     termevth = threading.Event()
     events.update({'term': termev, 'termth': termevth})
 
-    confopts = parse_config(conffile, logger)
+    confopts = parse_config(logger)
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)

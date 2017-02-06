@@ -1,12 +1,14 @@
 import ConfigParser
 
-def parse_config(conffile, logger):
+conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
+
+def parse_config(logger):
     reqsections = set(['dirq_', 'topic_', 'general'])
     confopts = dict()
 
     try:
         config = ConfigParser.ConfigParser()
-        if config.read(conffile):
+        if config.read(conf):
             pairedsects = ['{0}_'.format(s.lower().split('_', 1)[0]) for s in config.sections() if '_' in s]
 
             if len(pairedsects) % 2:
@@ -58,7 +60,7 @@ def parse_config(conffile, logger):
             return confopts
 
         else:
-            logger.error('Missing %s' % conffile)
+            logger.error('Missing %s' % conf)
             raise SystemExit(1)
 
     except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
