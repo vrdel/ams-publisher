@@ -33,8 +33,13 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
         events['term'].set()
         events['termth'].set()
 
+    def sigusrhandle(signum, frame):
+        logger.info('SIGUSR received')
+        events['usr1'].set()
+
     context_daemon.signal_map = {
-        signal.SIGTERM: sigtermhandle
+        signal.SIGTERM: sigtermhandle,
+        signal.SIGUSR1: sigusrhandle
     }
 
     if not restart:
@@ -123,8 +128,9 @@ def main():
     events = dict()
 
     termev = multiprocessing.Event()
+    usr1ev = multiprocessing.Event()
     termevth = threading.Event()
-    events.update({'term': termev, 'termth': termevth})
+    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
 
     confopts = parse_config(logger)
 

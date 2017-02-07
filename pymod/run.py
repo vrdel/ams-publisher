@@ -37,10 +37,11 @@ class ConsumerDirQ(Process):
     def cleanup(self):
         raise SystemExit(0)
 
-    def stats(self):
+    def stats(self, reset=False):
         self.log.info('{0} worker: consumed {1} msgs in {2} hours'.format(self.name, self.nmsgs_consumed, self.statseveryhour))
-        self.nmsgs_consumed = 0
-        self.prevstattime = int(datetime.now().strftime('%s'))
+        if reset:
+            self.nmsgs_consumed = 0
+            self.prevstattime = int(datetime.now().strftime('%s'))
 
     def run(self):
         self.seenmsgs = set()
@@ -60,9 +61,14 @@ class ConsumerDirQ(Process):
                 else:
                     self.unlock_dirq_msgs()
 
-            if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
+            if self.ev['usr1'].is_set():
                 self.stats()
                 self.publisher.stats()
+                self.ev['usr1'].clear()
+
+            if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
+                self.stats(reset=True)
+                self.publisher.stats(reset=True)
 
             time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
 

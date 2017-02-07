@@ -5,9 +5,10 @@ class Publish(object):
             exec code
         self.nmsgs_published = 0
 
-    def stats(self):
+    def stats(self, reset=False):
         self.log.info('{0} publisher: sent {1} msgs in {2} hours'.format(self.name, self.nmsgs_published, self.statseveryhour))
-        self.nmsgs_published = 0
+        if reset:
+            self.nmsgs_published = 0
 
     def write(self, num=0):
         published = set()
