@@ -3,6 +3,8 @@ import os
 import sys
 import time
 
+from datetime import datetime
+
 class Purger(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self)
@@ -12,12 +14,11 @@ class Purger(threading.Thread):
         self.start()
 
     def run(self):
-        i = 0
+        wassec = int(datetime.now().strftime('%s'))
         while True:
             if self.ev['termth'].is_set():
                 break
-            if i == self.purgeeverysec:
+            if int(datetime.now().strftime('%s')) - wassec >= self.purgeeverysec:
                 self.dirq.purge(maxtemp=self.maxtemp, maxlock=self.maxlock)
-                i = 0
+                wassec = int(datetime.now().strftime('%s'))
             time.sleep(self.evsleep)
-            i += self.evsleep
