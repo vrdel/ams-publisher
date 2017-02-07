@@ -33,6 +33,7 @@ def parse_config(logger=None):
             for section in config.sections():
                 if section.startswith('General'):
                     confopts['general'] = {'runasuser': config.get(section, 'RunAsUser')}
+                    confopts['general'] = {'statseveryhour': int(config.get(section, 'StatsEveryHour'))}
                 if section.startswith('DirQ_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()

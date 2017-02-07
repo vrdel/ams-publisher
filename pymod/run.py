@@ -1,12 +1,12 @@
-import datetime
 import decimal
 import os
 import sys
 import time
 
-from argo_nagios_ams_publisher.threads import Purger
 from argo_nagios_ams_publisher.publish import Publish
+from argo_nagios_ams_publisher.threads import Purger
 from collections import deque
+from datetime import datetime
 from messaging.error import MessageError
 from messaging.message import Message
 from messaging.queue.dqs import DQS
@@ -16,6 +16,9 @@ class ConsumerDirQ(Process):
     def __init__(self, *args, **kwargs):
         Process.__init__(self, *args, **kwargs)
         self.init_confopts(kwargs['kwargs'])
+
+        self.nmsgs_consumed = 0
+        self.sess_consumed = 0
 
         self.dirq = DQS(path=self.queue)
         self.inmemq = deque()
@@ -34,9 +37,14 @@ class ConsumerDirQ(Process):
     def cleanup(self):
         raise SystemExit(0)
 
+    def stats(self):
+        self.log.info('{0} worker: consumed {1} msgs in {2} hours'.format(self.name, self.nmsgs_consumed, self.statseveryhour))
+        self.nmsgs_consumed = 0
+        self.prevstattime = int(datetime.now().strftime('%s'))
+
     def run(self):
-        self.nmsgs_consumed, self.sess_consumed = 0, 0
         self.seenmsgs = set()
+        self.prevstattime = int(datetime.now().strftime('%s'))
 
         while True:
             if self.ev['term'].is_set():
@@ -51,6 +59,10 @@ class ConsumerDirQ(Process):
                     self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
                 else:
                     self.unlock_dirq_msgs()
+
+            if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
+                self.stats()
+                self.publisher.stats()
 
             time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
 
@@ -109,6 +121,7 @@ def init_dirq_consume(**kwargs):
         kw = dict()
 
         kw.update({'name': k})
+        kw.update({'statseveryhour': kwargs['conf']['general']['statseveryhour']})
         kw.update(kwargs['conf']['queues'][k])
         kw.update(kwargs['conf']['topics'][k])
         kw.update({'log': kwargs['log']})
