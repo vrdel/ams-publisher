@@ -91,7 +91,7 @@ def daemon_status(context_daemon, logger):
         logger.info('Not running')
         return 3
 
-def daemonizer(args, logger, events, confopts):
+def daemonizer(args, logger, events, confopts, detach):
     try:
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
@@ -104,10 +104,10 @@ def daemonizer(args, logger, events, confopts):
             logger.error('%s %s %s' % (os.strerror(e.args[0]), e.args[1], d))
             raise SystemExit(1)
 
-    context_daemon = daemon.DaemonContext()
+    context_daemon = daemon.DaemonContext(detach_process=detach)
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
 
-    if args.daemon == 'start':
+    if args.daemon == 'start' or not detach:
         daemon_start(context_daemon, logger, events, confopts)
 
     elif args.daemon == 'stop':
@@ -144,11 +144,11 @@ def main():
 
     if args.nofork:
         try:
-            init_dirq_consume(conf=confopts, log=logger, ev=events)
+            daemonizer(args, logger, events, confopts, detach=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
     elif args.daemon:
-        daemonizer(args, logger, events, confopts)
+        daemonizer(args, logger, events, confopts, detach=True)
 
 main()
