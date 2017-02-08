@@ -35,6 +35,7 @@ class ConsumerDirQ(Process):
             exec code
 
     def cleanup(self):
+        self.unlock_dirq_msgs(self.seenmsgs)
         raise SystemExit(0)
 
     def stats(self, reset=False):
@@ -104,7 +105,7 @@ class ConsumerDirQ(Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.unlock(m[0])
+                self.dirq.unlock(m[0] if not isinstance(m, str) else m)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.log.error(e)
@@ -113,7 +114,7 @@ class ConsumerDirQ(Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.remove(m[0])
+                self.dirq.remove(m[0] if not isinstance(m, str) else m)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.log.error(e)
