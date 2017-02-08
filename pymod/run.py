@@ -48,8 +48,13 @@ class ConsumerDirQ(Process):
         self.prevstattime = int(datetime.now().strftime('%s'))
 
         while True:
-            if self.ev['term'].is_set():
+            if self.ev['term'].is_set() or self.ev['int'].is_set():
                 self.cleanup()
+
+            if self.ev['usr1'].is_set():
+                self.stats()
+                self.publisher.stats()
+                self.ev['usr1'].clear()
 
             if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
                 ret, published = self.publisher.write(self.bulk)
@@ -61,10 +66,6 @@ class ConsumerDirQ(Process):
                 else:
                     self.unlock_dirq_msgs()
 
-            if self.ev['usr1'].is_set():
-                self.stats()
-                self.publisher.stats()
-                self.ev['usr1'].clear()
 
             if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
                 self.stats(reset=True)
@@ -138,7 +139,7 @@ def init_dirq_consume(**kwargs):
         consumers[-1].start()
 
     while True:
-        if ev['term'].is_set():
+        if ev['term'].is_set() or ev['int'].is_set():
             for c in consumers:
                 c.join(1)
             raise SystemExit(0)

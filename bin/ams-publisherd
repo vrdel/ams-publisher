@@ -28,6 +28,11 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
         except psutil.NoSuchProcess:
             context_daemon.pidfile.break_lock()
 
+    def siginthandle(signum, frame):
+        logger.info('SIGINT received')
+        events['int'].set()
+        events['intth'].set()
+
     def sigtermhandle(signum, frame):
         logger.info('SIGTERM received')
         events['term'].set()
@@ -39,7 +44,8 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
-        signal.SIGUSR1: sigusrhandle
+        signal.SIGUSR1: sigusrhandle,
+        signal.SIGINT: siginthandle
     }
 
     if not restart:
@@ -130,7 +136,10 @@ def main():
     termev = multiprocessing.Event()
     usr1ev = multiprocessing.Event()
     termevth = threading.Event()
-    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
+    inte = multiprocessing.Event()
+    inteth = threading.Event()
+    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev,
+                   'int': inte, 'intth': inteth})
 
     confopts = parse_config(logger)
 
