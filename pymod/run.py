@@ -20,6 +20,7 @@ class ConsumerDirQ(Process):
         self.nmsgs_consumed = 0
         self.sess_consumed = 0
 
+        self.seenmsgs = set()
         self.dirq = DQS(path=self.queue)
         self.inmemq = deque()
         self.pubnumloop = 1 if self.bulk > self.queuerate \
@@ -45,11 +46,10 @@ class ConsumerDirQ(Process):
             self.prevstattime = int(datetime.now().strftime('%s'))
 
     def run(self):
-        self.seenmsgs = set()
         self.prevstattime = int(datetime.now().strftime('%s'))
 
         while True:
-            if self.ev['term'].is_set() or self.ev['int'].is_set():
+            if self.ev['term'].is_set():
                 self.cleanup()
 
             if self.ev['usr1'].is_set():
@@ -129,6 +129,7 @@ def init_dirq_consume(**kwargs):
         kw = dict()
 
         kw.update({'name': k})
+        kw.update({'daemonized': kwargs['daemonized']})
         kw.update({'statseveryhour': kwargs['conf']['general']['statseveryhour']})
         kw.update(kwargs['conf']['queues'][k])
         kw.update(kwargs['conf']['topics'][k])
@@ -137,12 +138,19 @@ def init_dirq_consume(**kwargs):
         kw.update({'evsleep': evsleep})
 
         consumers.append(ConsumerDirQ(name=k, kwargs=kw))
+        if not kwargs['daemonized']:
+            consumers[-1].daemon = True
         consumers[-1].start()
 
     while True:
-        if ev['term'].is_set() or ev['int'].is_set():
+        if ev['term'].is_set():
             for c in consumers:
                 c.join(1)
             raise SystemExit(0)
 
-        time.sleep(evsleep)
+        try:
+            time.sleep(evsleep)
+        except KeyboardInterrupt:
+            for c in consumers:
+                c.terminate()
+            raise SystemExit(0)

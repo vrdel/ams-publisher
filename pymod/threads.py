@@ -11,12 +11,14 @@ class Purger(threading.Thread):
         for d in kwargs['kwargs'].iterkeys():
             code = "self.{0} = kwargs['kwargs']['{0}']".format(d)
             exec code
+        if not self.daemonized:
+            self.daemon = True
         self.start()
 
     def run(self):
         wassec = int(datetime.now().strftime('%s'))
         while True:
-            if self.ev['termth'].is_set() or self.ev['intth'].is_set():
+            if self.ev['termth'].is_set():
                 break
             if int(datetime.now().strftime('%s')) - wassec >= self.purgeeverysec:
                 self.dirq.purge(maxtemp=self.maxtemp, maxlock=self.maxlock)

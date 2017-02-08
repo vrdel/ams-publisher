@@ -28,11 +28,6 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
         except psutil.NoSuchProcess:
             context_daemon.pidfile.break_lock()
 
-    def siginthandle(signum, frame):
-        logger.info('SIGINT received')
-        events['int'].set()
-        events['intth'].set()
-
     def sigtermhandle(signum, frame):
         logger.info('SIGTERM received')
         events['term'].set()
@@ -44,8 +39,7 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
-        signal.SIGUSR1: sigusrhandle,
-        signal.SIGINT: siginthandle
+        signal.SIGUSR1: sigusrhandle
     }
 
     if not restart:
@@ -53,7 +47,7 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
 
     context_daemon.open()
     with context_daemon:
-        init_dirq_consume(conf=confopts, log=logger, ev=events)
+        init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=True)
 
 def daemon_stop(context_daemon, logger, restart=False):
     if context_daemon.pidfile.is_locked():
@@ -97,7 +91,7 @@ def daemon_status(context_daemon, logger):
         logger.info('Not running')
         return 3
 
-def daemonizer(args, logger, events, confopts, detach):
+def daemonizer(args, logger, events, confopts):
     try:
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
@@ -110,10 +104,10 @@ def daemonizer(args, logger, events, confopts, detach):
             logger.error('%s %s %s' % (os.strerror(e.args[0]), e.args[1], d))
             raise SystemExit(1)
 
-    context_daemon = daemon.DaemonContext(detach_process=detach)
+    context_daemon = daemon.DaemonContext()
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
 
-    if args.daemon == 'start' or not detach:
+    if args.daemon == 'start':
         daemon_start(context_daemon, logger, events, confopts)
 
     elif args.daemon == 'stop':
@@ -136,10 +130,7 @@ def main():
     termev = multiprocessing.Event()
     usr1ev = multiprocessing.Event()
     termevth = threading.Event()
-    inte = multiprocessing.Event()
-    inteth = threading.Event()
-    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev,
-                   'int': inte, 'intth': inteth})
+    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
 
     confopts = parse_config(logger)
 
@@ -153,11 +144,11 @@ def main():
 
     if args.nofork:
         try:
-            daemonizer(args, logger, events, confopts, detach=False)
+            init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
     elif args.daemon:
-        daemonizer(args, logger, events, confopts, detach=True)
+        daemonizer(args, logger, events, confopts)
 
 main()
