@@ -49,30 +49,34 @@ class ConsumerDirQ(Process):
         self.prevstattime = int(datetime.now().strftime('%s'))
 
         while True:
-            if self.ev['term'].is_set():
+            try:
+                if self.ev['term'].is_set():
+                    self.cleanup()
+
+                if self.ev['usr1'].is_set():
+                    self.stats()
+                    self.publisher.stats()
+                    self.ev['usr1'].clear()
+
+                if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
+                    ret, published = self.publisher.write(self.bulk)
+                    if ret:
+                        self.remove_dirq_msgs()
+                    elif published:
+                        self.remove_dirq_msgs(published)
+                        self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
+                    else:
+                        self.unlock_dirq_msgs()
+
+                if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
+                    self.stats(reset=True)
+                    self.publisher.stats(reset=True)
+
+                time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
+
+            except KeyboardInterrupt:
                 self.cleanup()
 
-            if self.ev['usr1'].is_set():
-                self.stats()
-                self.publisher.stats()
-                self.ev['usr1'].clear()
-
-            if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
-                ret, published = self.publisher.write(self.bulk)
-                if ret:
-                    self.remove_dirq_msgs()
-                elif published:
-                    self.remove_dirq_msgs(published)
-                    self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
-                else:
-                    self.unlock_dirq_msgs()
-
-
-            if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
-                self.stats(reset=True)
-                self.publisher.stats(reset=True)
-
-            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
 
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
@@ -152,5 +156,5 @@ def init_dirq_consume(**kwargs):
             time.sleep(evsleep)
         except KeyboardInterrupt:
             for c in consumers:
-                c.terminate()
+                c.join(1)
             raise SystemExit(0)
