@@ -6,9 +6,20 @@ class Publish(object):
         self.nmsgs_published = 0
 
     def stats(self, reset=False):
-        self.log.info('{0} publisher: sent {1} msgs in {2} hours'.format(self.name, self.nmsgs_published, self.statseveryhour))
+        self.log.info('{0} {1}: sent {2} msgs in {3} hours'.format(self.__class__.__name__,
+                                                                   self.name,
+                                                                   self.nmsgs_published,
+                                                                   self.statseveryhour
+                                                                   ))
         if reset:
             self.nmsgs_published = 0
+
+    def write(self, num=0):
+        pass
+
+class FilePublisher(Publish):
+    def __init__(self, *args, **kwargs):
+        super(FilePublisher, self).__init__(*args, **kwargs)
 
     def write(self, num=0):
         published = set()

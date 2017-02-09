@@ -3,7 +3,7 @@ import os
 import sys
 import time
 
-from argo_nagios_ams_publisher.publish import Publish
+from argo_nagios_ams_publisher.publish import FilePublisher
 from argo_nagios_ams_publisher.threads import Purger
 from collections import deque
 from datetime import datetime
@@ -12,7 +12,7 @@ from messaging.message import Message
 from messaging.queue.dqs import DQS
 from multiprocessing import Process
 
-class ConsumerDirQ(Process):
+class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
         Process.__init__(self, *args, **kwargs)
         self.init_confopts(kwargs['kwargs'])
@@ -27,7 +27,7 @@ class ConsumerDirQ(Process):
                           else self.queuerate / self.bulk
         kwargs['kwargs'].update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
                                  'dirq': self.dirq})
-        self.publisher = Publish(*args, **kwargs)
+        self.publisher = FilePublisher(*args, **kwargs)
         self.purger = Purger(*args, **kwargs)
 
     def init_confopts(self, confopts):
@@ -40,7 +40,10 @@ class ConsumerDirQ(Process):
         raise SystemExit(0)
 
     def stats(self, reset=False):
-        self.log.info('{0} worker: consumed {1} msgs in {2} hours'.format(self.name, self.nmsgs_consumed, self.statseveryhour))
+        self.log.info('{0} {1}: consumed {2} msgs in {3} hours'.format(self.__class__.__name__,
+                                                                       self.name,
+                                                                       self.nmsgs_consumed,
+                                                                       self.statseveryhour))
         if reset:
             self.nmsgs_consumed = 0
             self.prevstattime = int(datetime.now().strftime('%s'))
@@ -141,7 +144,7 @@ def init_dirq_consume(**kwargs):
         kw.update({'ev': kwargs['ev']})
         kw.update({'evsleep': evsleep})
 
-        consumers.append(ConsumerDirQ(name=k, kwargs=kw))
+        consumers.append(ConsumerQueue(name=k, kwargs=kw))
         if not kwargs['daemonized']:
             consumers[-1].daemon = True
         consumers[-1].start()
