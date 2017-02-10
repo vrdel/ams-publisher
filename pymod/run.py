@@ -27,7 +27,9 @@ class ConsumerQueue(Process):
                           else self.queuerate / self.bulk
         kwargs['kwargs'].update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
                                  'dirq': self.dirq})
-        self.publisher = FilePublisher(*args, **kwargs)
+        self.publishers = list()
+        if self.writemsgfile:
+            self.publishers.append(FilePublisher(*args, **kwargs))
         self.purger = Purger(*args, **kwargs)
 
     def init_confopts(self, confopts):
@@ -58,22 +60,25 @@ class ConsumerQueue(Process):
 
                 if self.ev['usr1'].is_set():
                     self.stats()
-                    self.publisher.stats()
+                    for p in self.publishers:
+                        p.stats()
                     self.ev['usr1'].clear()
 
                 if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
-                    ret, published = self.publisher.write(self.bulk)
-                    if ret:
-                        self.remove_dirq_msgs()
-                    elif published:
-                        self.remove_dirq_msgs(published)
-                        self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
-                    else:
-                        self.unlock_dirq_msgs()
+                    for p in self.publishers:
+                        ret, published = p.write(self.bulk)
+                        if ret:
+                            self.remove_dirq_msgs()
+                        elif published:
+                            self.remove_dirq_msgs(published)
+                            self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
+                        else:
+                            self.unlock_dirq_msgs()
 
                 if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
                     self.stats(reset=True)
-                    self.publisher.stats(reset=True)
+                    for p in self.publishers:
+                        p.stats(reset=True)
 
                 time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
 
@@ -138,6 +143,8 @@ def init_dirq_consume(**kwargs):
         kw.update({'name': k})
         kw.update({'daemonized': kwargs['daemonized']})
         kw.update({'statseveryhour': kwargs['conf']['general']['statseveryhour']})
+        kw.update({'writemsgfile': kwargs['conf']['general']['writemsgfile']})
+        kw.update({'writemsgfiledir': kwargs['conf']['general']['writemsgfiledir']})
         kw.update(kwargs['conf']['queues'][k])
         kw.update(kwargs['conf']['topics'][k])
         kw.update({'log': kwargs['log']})

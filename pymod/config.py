@@ -32,8 +32,10 @@ def parse_config(logger=None):
             queues, topics = dict(), dict()
             for section in config.sections():
                 if section.startswith('General'):
-                    confopts['general'] = {'runasuser': config.get(section, 'RunAsUser')}
-                    confopts['general'] = {'statseveryhour': int(config.get(section, 'StatsEveryHour'))}
+                    confopts['general'] = ({'runasuser': config.get(section, 'RunAsUser')})
+                    confopts['general'].update({'statseveryhour': int(config.get(section, 'StatsEveryHour'))})
+                    confopts['general'].update({'writemsgfile': bool(config.get(section, 'WriteMsgFile'))})
+                    confopts['general'].update({'writemsgfiledir': config.get(section, 'WriteMsgFileDir')})
                 if section.startswith('DirQ_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
