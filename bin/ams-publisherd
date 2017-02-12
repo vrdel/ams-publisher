@@ -19,6 +19,15 @@ import threading
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
+def fdlogfile(logger, logfile):
+    try:
+        fd = open(logfile, 'w')
+    except (OSError, IOError) as e:
+        logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
+        raise SystemExit(1)
+    else:
+        return fd
+
 def daemon_start(context_daemon, logger, events, confopts, restart=False):
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
@@ -43,6 +52,8 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
         signal.SIGTERM: sigtermhandle,
         signal.SIGUSR1: sigusrhandle
     }
+
+    context_daemon.files_preserve = [fdlogfile(logger, logfile)]
 
     if not restart:
         logger.info('Started')
@@ -106,7 +117,6 @@ def pidfiledir(logger, pidfile, confopts):
             logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
             raise SystemExit(1)
 
-
 def daemonizer(args, logger, events, confopts):
     pidfiledir(logger, pidfile, confopts)
 
@@ -129,7 +139,7 @@ def daemonizer(args, logger, events, confopts):
         raise SystemExit(ret)
 
 def main():
-    lobj = Logger(sys.argv[0])
+    lobj = Logger(sys.argv[0], logfile)
     logger = lobj.get()
     events = dict()
 

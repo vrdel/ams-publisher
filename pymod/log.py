@@ -27,22 +27,22 @@ class Logger(object):
         sh.setLevel(lv)
         self.logger.addHandler(sh)
 
-    def _init_filelog(self):
+    def _init_filelog(self, logfile):
         lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(fmt=lfs, datefmt='%Y-%m-%d %H:%M:%S')
         lv = logging.INFO
 
-        sf = logging.handlers.RotatingFileHandler(logfile, maxBytes=1024, backupCount=5)
+        sf = logging.handlers.RotatingFileHandler(logfile, maxBytes=512*1024, backupCount=5)
         self.loghandle = sf.stream
         sf.setFormatter(lf)
         sf.setLevel(lv)
         self.logger.addHandler(sf)
 
-    def __init__(self, caller):
+    def __init__(self, caller, logfile):
         self._caller = os.path.basename(caller)
         try:
             self._init_stdout()
-            self._init_filelog()
+            self._init_filelog(logfile)
             self._init_syslog()
         except (OSError, IOError) as e:
             sys.stderr.write('ERROR ' + self._caller + ' - ' + str(e) + '\n')
