@@ -7,22 +7,24 @@ from argo_nagios_ams_publisher.run import init_dirq_consume
 import argparse
 import daemon
 import daemon.pidlockfile
+import errno
+import multiprocessing
 import os
 import psutil
 import pwd
 import signal
 import sys
-import multiprocessing
 import threading
 
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
+logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
 def daemon_start(context_daemon, logger, events, confopts, restart=False):
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
         try:
-            process = psutil.Process(pid=pid)
+            psutil.Process(pid=pid)
             logger.info('Already running (%s)' % pid)
             return 0
         except psutil.NoSuchProcess:
@@ -91,7 +93,7 @@ def daemon_status(context_daemon, logger):
         logger.info('Not running')
         return 3
 
-def daemonizer(args, logger, events, confopts):
+def pidfiledir(logger, pidfile, confopts):
     try:
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
@@ -101,8 +103,12 @@ def daemonizer(args, logger, events, confopts):
             os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
-            logger.error('%s %s %s' % (os.strerror(e.args[0]), e.args[1], d))
+            logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
             raise SystemExit(1)
+
+
+def daemonizer(args, logger, events, confopts):
+    pidfiledir(logger, pidfile, confopts)
 
     context_daemon = daemon.DaemonContext()
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
