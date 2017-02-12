@@ -19,14 +19,8 @@ import threading
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
-def fdlogfile(logger, logfile):
-    try:
-        fd = open(logfile, 'w')
-    except (OSError, IOError) as e:
-        logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
-        raise SystemExit(1)
-    else:
-        return fd
+def get_userids(user):
+    return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
 def daemon_start(context_daemon, logger, events, confopts, restart=False):
     if context_daemon.pidfile.is_locked() and not \
@@ -53,7 +47,11 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
         signal.SIGUSR1: sigusrhandle
     }
 
-    context_daemon.files_preserve = [fdlogfile(logger, logfile)]
+    uid, gid = get_userids(confopts['general']['runasuser'])
+    context_daemon.uid = uid
+    context_daemon.gid = gid
+    os.chown(logger.fileloghandle.name, uid, gid)
+    context_daemon.files_preserve = [logger.fileloghandle]
 
     if not restart:
         logger.info('Started')
@@ -109,8 +107,7 @@ def pidfiledir(logger, pidfile, confopts):
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
             os.makedirs(dirp)
-            user = confopts['general']['runasuser']
-            uid, gid = pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
+            uid, gid = get_userids(confopts['general']['runasuser'])
             os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
