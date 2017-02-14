@@ -24,13 +24,14 @@ def build_msg(args, *headers):
     msg.header = dict()
     msg.body = str()
 
-    timestamp, service, hostname, metric, status = headers
+    timestamp, service, hostname, metric, status, nagioshost = headers
 
     msg.header.update({'timestamp': timestamp})
     msg.header.update({'service': service})
     msg.header.update({'hostname': hostname})
     msg.header.update({'metric': metric})
     msg.header.update({'status': status})
+    msg.header.update({'monitoring_host': nagioshost})
 
     for bs in ['summary', 'message', 'vofqan', 'voname', 'roc']:
         code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
@@ -43,6 +44,7 @@ def main():
     lobj = log.Logger(sys.argv[0], logfile)
     logger = lobj.get()
     confopts = config.parse_config(logger)
+    nagioshost = confopts['general']['nagioshost']
 
     parser.add_argument('--queue', required=True, type=str)
 
@@ -73,11 +75,11 @@ def main():
             services = [s.strip() for s in services]
             for service in services:
                 msg = build_msg(args, args.timestamp, service, args.hostname, \
-                                args.metric, args.status)
+                                args.metric, args.status, nagioshost)
                 mq.add_message(msg)
         else:
             msg = build_msg(args, args.timestamp, args.service, args.hostname, \
-                            args.metric, args.status)
+                            args.metric, args.status, nagioshost)
             mq.add_message(msg)
 
     except MessageError as e:
