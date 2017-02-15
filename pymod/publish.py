@@ -1,3 +1,11 @@
+import avro.schema
+from avro.io import BinaryEncoder
+from avro.io import DatumReader
+from avro.io import DatumWriter
+from base64 import b64encode
+from collections import deque
+from io import BytesIO
+
 class Publish(object):
     def __init__(self, *args, **kwargs):
         for d in kwargs['kwargs'].iterkeys():
@@ -43,5 +51,51 @@ class MessagingPublisher(Publish):
     def __init__(self, *args, **kwargs):
         super(MessagingPublisher, self).__init__(*args, **kwargs)
 
+    def _construct_plainmsg(self, msg):
+        plainmsg = dict()
+        plainmsg.update(msg.header)
+
+        bodylines = msg.body.split('\n')
+        for line in bodylines:
+            split = line.split(': ', 1)
+            if len(split) > 1:
+                key = split[0]
+                value = split[1]
+                plainmsg[key] = value.decode('utf-8', 'replace')
+
+        return plainmsg['timestamp'], plainmsg
+
+    def _avro_serialize(self, msg):
+        avro_writer = DatumWriter(self.schema)
+        bytesio = BytesIO()
+        encoder = BinaryEncoder(bytesio)
+        avro_writer.write(msg, encoder)
+
+        return bytesio.getvalue()
+
+    def _part_date(self, timestamp):
+        import datetime
+
+        date_fmt = '%Y-%m-%dT%H:%M:%SZ'
+        part_date_fmt = '%Y-%m-%d'
+        d = datetime.datetime.strptime(timestamp, date_fmt)
+
+        return d.strftime(part_date_fmt)
+
     def write(self, num=0):
-        pass
+        published = set()
+        try:
+            for i in range(self.pubnumloop):
+                msgs = [self._construct_plainmsg(self.inmemq[e][1]) for e in range(self.bulk)]
+                msgs = map(lambda m: (self._part_date(m[0]), self._avro_serialize(m[1])), msgs)
+                self.log.info(msgs)
+                published.update([self.inmemq[e][0] for e in range(self.bulk)])
+                self.nmsgs_published += self.bulk
+
+                self.inmemq.rotate(-self.bulk)
+
+            return True, published
+
+        except Exception as e:
+            self.log.error(e)
+            return False, published

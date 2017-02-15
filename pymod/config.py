@@ -38,6 +38,7 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishmsgfile': eval(config.get(section, 'PublishMsgFile'))})
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
+                    confopts['general'].update({'msgavroschema': config.get(section, 'MsgAvroSchema')})
                 if section.startswith('DirQ_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()

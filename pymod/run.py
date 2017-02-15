@@ -1,3 +1,4 @@
+import avro.schema
 import decimal
 import os
 import sys
@@ -80,7 +81,6 @@ class ConsumerQueue(Process):
             except KeyboardInterrupt:
                 self.cleanup()
 
-
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
             self.inmemq.append(elem)
@@ -144,6 +144,13 @@ def init_dirq_consume(**kwargs):
             kw.update({'publisher': FilePublisher})
 
         if kwargs['conf']['general']['publishargomessaging']:
+            try:
+                avsc = open(kwargs['conf']['general']['msgavroschema'])
+                kw.update({'schema': avro.schema.parse(avsc.read())})
+            except Exception as e:
+                log.error(e)
+                raise SystemExit(1)
+
             kw.update({'publisher': MessagingPublisher})
 
         kw.update(kwargs['conf']['queues'][k])
