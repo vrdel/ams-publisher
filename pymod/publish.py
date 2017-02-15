@@ -25,7 +25,7 @@ class FilePublisher(Publish):
         published = set()
         try:
             for i in range(self.pubnumloop):
-                with open('/{0}/{1}'.format(self.writemsgfiledir, self.topic), 'a') as fp:
+                with open('/{0}/{1}'.format(self.publishmsgfiledir, self.topic), 'a') as fp:
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.bulk)])
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
@@ -38,3 +38,10 @@ class FilePublisher(Publish):
         except Exception as e:
             self.log.error(e)
             return False, published
+
+class MessagingPublisher(Publish):
+    def __init__(self, *args, **kwargs):
+        super(MessagingPublisher, self).__init__(*args, **kwargs)
+
+    def write(self, num=0):
+        pass

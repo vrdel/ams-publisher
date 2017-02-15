@@ -33,9 +33,11 @@ def parse_config(logger=None):
             for section in config.sections():
                 if section.startswith('General'):
                     confopts['general'] = ({'runasuser': config.get(section, 'RunAsUser')})
+                    confopts['general'].update({'host': config.get(section, 'Host')})
                     confopts['general'].update({'statseveryhour': int(config.get(section, 'StatsEveryHour'))})
-                    confopts['general'].update({'writemsgfile': bool(config.get(section, 'WriteMsgFile'))})
-                    confopts['general'].update({'writemsgfiledir': config.get(section, 'WriteMsgFileDir')})
+                    confopts['general'].update({'publishmsgfile': eval(config.get(section, 'PublishMsgFile'))})
+                    confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
+                    confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
                 if section.startswith('DirQ_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
@@ -69,6 +71,21 @@ def parse_config(logger=None):
                     else:
                         sys.stderr.write('dirq_%s: QueueRate should be multiple of BulkSize\n' % k)
                     raise SystemExit(1)
+
+            if all([confopts['general']['publishmsgfile'] == False, confopts['general']['publishargomessaging'] == False]):
+                if logger:
+                    logger.error('One publisher must be enabled')
+                else:
+                    sys.stderr.write('One publisher must be enabled')
+                raise SystemExit(1)
+
+            if all([confopts['general']['publishmsgfile'], confopts['general']['publishargomessaging']]):
+                if logger:
+                    logger.error('Only one enabled publisher allowed at a time')
+                else:
+                    sys.stderr.write('Only one enabled publisher allowed at a time')
+                raise SystemExit(1)
+
 
             confopts['queues'] = queues
             confopts['topics'] = topics

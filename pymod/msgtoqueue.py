@@ -44,7 +44,7 @@ def main():
     lobj = log.Logger(sys.argv[0], logfile)
     logger = lobj.get()
     confopts = config.parse_config(logger)
-    nagioshost = confopts['general']['nagioshost']
+    nagioshost = confopts['general']['host']
 
     parser.add_argument('--queue', required=True, type=str)
 
