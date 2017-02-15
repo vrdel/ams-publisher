@@ -35,7 +35,7 @@ rm -rf $RPM_BUILD_ROOT
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/operations/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 
 %post
@@ -79,3 +79,5 @@ fi
 %dir %{_localstatedir}/run/%{name}/
 
 %changelog
+* Wed Feb 15 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}
+- first version 
