@@ -5,7 +5,7 @@ import sys
 import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
-from argo_nagios_ams_publisher.threads import Purger
+from argo_nagios_ams_publisher.purge import Purger
 from collections import deque
 from datetime import datetime
 from messaging.error import MessageError
@@ -16,7 +16,7 @@ from multiprocessing import Process
 class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
         Process.__init__(self, *args, **kwargs)
-        self.init_confopts(kwargs['kwargs'])
+        self.init_attrs(kwargs['kwargs'])
 
         self.nmsgs_consumed = 0
         self.sess_consumed = 0
@@ -31,7 +31,7 @@ class ConsumerQueue(Process):
         self.publisher = self.publisher(*args, **kwargs)
         self.purger = Purger(*args, **kwargs)
 
-    def init_confopts(self, confopts):
+    def init_attrs(self, confopts):
         for k in confopts.iterkeys():
             code = "self.{0} = confopts.get('{0}')".format(k)
             exec code

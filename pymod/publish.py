@@ -8,10 +8,13 @@ from io import BytesIO
 
 class Publish(object):
     def __init__(self, *args, **kwargs):
-        for d in kwargs['kwargs'].iterkeys():
-            code = "self.{0} = kwargs['kwargs']['{0}']".format(d)
-            exec code
+        self.init_attrs(kwargs['kwargs'])
         self.nmsgs_published = 0
+
+    def init_attrs(self, confopts):
+        for k in confopts.iterkeys():
+            code = "self.{0} = confopts.get('{0}')".format(k)
+            exec code
 
     def stats(self, reset=False):
         self.log.info('{0} {1}: sent {2} msgs in {3} hours'.format(self.__class__.__name__,
