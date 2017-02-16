@@ -54,6 +54,7 @@ def parse_config(logger=None):
                     topts = dict()
                     tname = section.split('_', 1)[1].lower()
                     topts['host'] = config.get(section, 'Host')
+                    topts['type'] = config.get(section, 'Type')
                     topts['key'] = config.get(section, 'Key')
                     topts['project'] = config.get(section, 'Project')
                     topts['topic'] = config.get(section, 'Topic')

@@ -87,7 +87,8 @@ class MessagingPublisher(Publish):
         try:
             for i in range(self.pubnumloop):
                 msgs = [self._construct_plainmsg(self.inmemq[e][1]) for e in range(self.bulk)]
-                msgs = map(lambda m: (self._part_date(m[0]), self._avro_serialize(m[1])), msgs)
+                if self.type == 'metric_data':
+                    msgs = map(lambda m: (self._part_date(m[0]), self._avro_serialize(m[1])), msgs)
                 self.log.info(msgs)
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
                 self.nmsgs_published += self.bulk
