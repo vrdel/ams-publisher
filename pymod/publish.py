@@ -6,6 +6,9 @@ from base64 import b64encode
 from collections import deque
 from io import BytesIO
 
+from argo_ams_library.ams import ArgoMessagingService
+from argo_ams_library.amsmsg import AmsMessage
+
 class Publish(object):
     def __init__(self, *args, **kwargs):
         self.init_attrs(kwargs['kwargs'])
@@ -53,6 +56,9 @@ class FilePublisher(Publish):
 class MessagingPublisher(Publish):
     def __init__(self, *args, **kwargs):
         super(MessagingPublisher, self).__init__(*args, **kwargs)
+        self.ams = ArgoMessagingService(endpoint=self.host,
+                                        token=self.key,
+                                        project=self.project)
 
     def _construct_plainmsg(self, msg):
         plainmsg = dict()
@@ -92,7 +98,11 @@ class MessagingPublisher(Publish):
                 msgs = [self._construct_plainmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                 if self.type == 'metric_data':
                     msgs = map(lambda m: (self._part_date(m[0]), self._avro_serialize(m[1])), msgs)
-                self.log.info(msgs)
+                    msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
+                                                                'type': 'metric_data'},
+                                                    data=m[1]).dict(), msgs)
+                self.ams.publish(self.topic, msgs)
+                # self.log.info(msgs)
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
                 self.nmsgs_published += self.bulk
 
