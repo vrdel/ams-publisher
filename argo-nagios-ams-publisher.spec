@@ -38,11 +38,22 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/m
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 
+%files -f INSTALLED_FILES
+%defattr(-,root,root,-)
+%dir %{python_sitelib}/%{underscore %{name}}
+%{python_sitelib}/%{underscore %{name}}/*.py[co]
+%defattr(-,nagios,nagios,-)
+%dir %{_localstatedir}/log/%{name}/
+%dir %{_localstatedir}/run/%{name}/
+
 %post
 /sbin/chkconfig --add ams-publisher 
 if [ "$1" = 2 ]; then
   /sbin/service ams-publisher stop > /dev/null 2>&1
 fi
+
+%clean
+rm -rf $RPM_BUILD_ROOT
 
 %preun
 if [ "$1" = 0 ]; then
@@ -57,8 +68,6 @@ if [ "$1" = 0 ]; then
 fi
 exit 0
 
-%clean
-rm -rf $RPM_BUILD_ROOT
 
 %pre
 if ! /usr/bin/id nagios &>/dev/null; then
@@ -69,14 +78,6 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
     /usr/sbin/groupadd nagiocmd &>/dev/null || \
         logger -t nagios/rpm "Unexpected error adding group \"nagiocmd\". Aborting installation."
 fi
-
-%files -f INSTALLED_FILES
-%defattr(-,root,root,-)
-%dir %{python_sitelib}/%{underscore %{name}}
-%{python_sitelib}/%{underscore %{name}}/*.py[co]
-%defattr(-,nagios,nagios,-)
-%dir %{_localstatedir}/log/%{name}/
-%dir %{_localstatedir}/run/%{name}/
 
 %changelog
 * Wed Feb 15 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}
