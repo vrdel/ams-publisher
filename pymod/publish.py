@@ -101,6 +101,9 @@ class MessagingPublisher(Publish):
                     msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                                 'type': 'metric_data'},
                                                     data=m[1]).dict(), msgs)
+                elif self.type == 'alarm'
+                    msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
+                                                    data=m[1]).dict(), msgs)
                 self.ams.publish(self.topic, msgs)
                 # self.log.info(msgs)
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
