@@ -8,12 +8,12 @@ from datetime import datetime
 class Purger(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self)
-        self.init_confopts(kwargs['kwargs'])
+        self.init_attrs(kwargs['kwargs'])
         if not self.daemonized:
             self.daemon = True
         self.start()
 
-    def init_confopts(self, confopts):
+    def init_attrs(self, confopts):
         for k in confopts.iterkeys():
             code = "self.{0} = confopts.get('{0}')".format(k)
             exec code

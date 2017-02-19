@@ -60,7 +60,24 @@ class MessagingPublisher(Publish):
                                         token=self.key,
                                         project=self.project)
 
-    def _construct_plainmsg(self, msg):
+    def construct_metricmsg(self, msg):
+        def _part_date(timestamp):
+            import datetime
+
+            date_fmt = '%Y-%m-%dT%H:%M:%SZ'
+            part_date_fmt = '%Y-%m-%d'
+            d = datetime.datetime.strptime(timestamp, date_fmt)
+
+            return d.strftime(part_date_fmt)
+
+        def _avro_serialize(msg):
+            avro_writer = DatumWriter(self.schema)
+            bytesio = BytesIO()
+            encoder = BinaryEncoder(bytesio)
+            avro_writer.write(msg, encoder)
+
+            return bytesio.getvalue()
+
         plainmsg = dict()
         plainmsg.update(msg.header)
 
@@ -72,40 +89,25 @@ class MessagingPublisher(Publish):
                 value = split[1]
                 plainmsg[key] = value.decode('utf-8', 'replace')
 
-        return plainmsg['timestamp'], plainmsg
+        return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
 
-    def _avro_serialize(self, msg):
-        avro_writer = DatumWriter(self.schema)
-        bytesio = BytesIO()
-        encoder = BinaryEncoder(bytesio)
-        avro_writer.write(msg, encoder)
-
-        return bytesio.getvalue()
-
-    def _part_date(self, timestamp):
-        import datetime
-
-        date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-        part_date_fmt = '%Y-%m-%d'
-        d = datetime.datetime.strptime(timestamp, date_fmt)
-
-        return d.strftime(part_date_fmt)
+    def construct_alarmsg(self, msg):
+        return msg.stringify()
 
     def write(self, num=0):
         published = set()
         try:
             for i in range(self.pubnumloop):
-                msgs = [self._construct_plainmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                 if self.type == 'metric_data':
-                    msgs = map(lambda m: (self._part_date(m[0]), self._avro_serialize(m[1])), msgs)
+                    msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                     msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                                 'type': 'metric_data'},
                                                     data=m[1]).dict(), msgs)
-                elif self.type == 'alarm'
+                elif self.type == 'alarm':
+                    msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                     msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
-                                                    data=m[1]).dict(), msgs)
+                                                    data=m).dict(), msgs)
                 self.ams.publish(self.topic, msgs)
-                # self.log.info(msgs)
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
                 self.nmsgs_published += self.bulk
 
