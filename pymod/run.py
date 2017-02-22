@@ -15,8 +15,8 @@ from multiprocessing import Process
 
 class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
-        Process.__init__(self, *args, **kwargs)
-        self.init_attrs(kwargs['kwargs'])
+        Process.__init__(self)
+        self.init_attrs(kwargs)
 
         self.nmsgs_consumed = 0
         self.sess_consumed = 0
@@ -26,8 +26,8 @@ class ConsumerQueue(Process):
         self.inmemq = deque()
         self.pubnumloop = 1 if self.bulk > self.queuerate \
                           else self.queuerate / self.bulk
-        kwargs['kwargs'].update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
-                                 'dirq': self.dirq, 'filepublisher': False})
+        kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
+                       'dirq': self.dirq, 'filepublisher': False})
         self.publisher = self.publisher(*args, **kwargs)
         self.purger = Purger(*args, **kwargs)
 
@@ -159,7 +159,7 @@ def init_dirq_consume(**kwargs):
         kw.update({'ev': kwargs['ev']})
         kw.update({'evsleep': evsleep})
 
-        consumers.append(ConsumerQueue(name=k, kwargs=kw))
+        consumers.append(ConsumerQueue(**kw))
         if not kwargs['daemonized']:
             consumers[-1].daemon = True
         consumers[-1].start()

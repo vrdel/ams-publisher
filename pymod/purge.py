@@ -8,7 +8,7 @@ from datetime import datetime
 class Purger(threading.Thread):
     def __init__(self, *args, **kwargs):
         threading.Thread.__init__(self)
-        self.init_attrs(kwargs['kwargs'])
+        self.init_attrs(kwargs)
         if not self.daemonized:
             self.daemon = True
         self.start()

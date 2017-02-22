@@ -11,7 +11,7 @@ from argo_ams_library.amsmsg import AmsMessage
 
 class Publish(object):
     def __init__(self, *args, **kwargs):
-        self.init_attrs(kwargs['kwargs'])
+        self.init_attrs(kwargs)
         self.nmsgs_published = 0
 
     def init_attrs(self, confopts):
