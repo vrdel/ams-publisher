@@ -11,7 +11,7 @@ from datetime import datetime
 from messaging.error import MessageError
 from messaging.message import Message
 from messaging.queue.dqs import DQS
-from multiprocessing import Process, Event
+from multiprocessing import Process, Lock
 
 class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
@@ -59,9 +59,8 @@ class ConsumerQueue(Process):
         while True:
             try:
                 if self.ev['term'].is_set():
-                    if self.publisher.nmsgs_published and self.ev['publishing-{0}'.format(self.name)].is_set():
-                        while self.ev['publishing-{0}'.format(self.name)].is_set():
-                            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
+                    l = self.ev['publishing-{0}'.format(self.name)]
+                    l.acquire(True)
                     self.stats()
                     self.publisher.stats()
                     self.cleanup()
@@ -69,9 +68,8 @@ class ConsumerQueue(Process):
                     raise SystemExit(0)
 
                 if self.ev['usr1'].is_set():
-                    if self.publisher.nmsgs_published and not self.ev['publishing-{0}'.format(self.name)].is_set():
-                        while self.ev['publishing-{0}'.format(self.name)].is_set():
-                            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
+                    l = self.ev['publishing-{0}'.format(self.name)]
+                    l.acquire(True)
                     self.stats()
                     self.publisher.stats()
                     self.ev['usr1'].clear()
@@ -172,7 +170,7 @@ def init_dirq_consume(**kwargs):
         kw.update(kwargs['conf']['topics'][k])
         kw.update({'log': kwargs['log']})
         kw.update({'ev': kwargs['ev']})
-        kw['ev'].update({'publishing-{0}'.format(k): Event()})
+        kw['ev'].update({'publishing-{0}'.format(k): Lock()})
         kw.update({'evsleep': evsleep})
 
         consumers.append(ConsumerQueue(**kw))
