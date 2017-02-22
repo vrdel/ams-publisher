@@ -1,4 +1,6 @@
 import avro.schema
+import time
+
 from avro.io import BinaryEncoder
 from avro.io import DatumReader
 from avro.io import DatumWriter
@@ -13,6 +15,7 @@ class Publish(object):
     def __init__(self, *args, **kwargs):
         self.init_attrs(kwargs)
         self.nmsgs_published = 0
+        self.laststattime = time.time()
 
     def init_attrs(self, confopts):
         for k in confopts.iterkeys():
@@ -20,13 +23,19 @@ class Publish(object):
             exec code
 
     def stats(self, reset=False):
-        self.log.info('{0} {1}: sent {2} msgs in {3} hours'.format(self.__class__.__name__,
-                                                                   self.name,
-                                                                   self.nmsgs_published,
-                                                                   self.statseveryhour
-                                                                   ))
+        def statmsg(hours):
+            self.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
+                                                                    self.name,
+                                                                    self.nmsgs_published,
+                                                                    hours
+                                                                    ))
         if reset:
+            statmsg(self.statseveryhour)
             self.nmsgs_published = 0
+            self.laststattime = time.time()
+        else:
+            sincelaststat = time.time() - self.laststattime
+            statmsg(sincelaststat/3600)
 
     def write(self, num=0):
         pass
@@ -95,6 +104,7 @@ class MessagingPublisher(Publish):
         return msg.stringify()
 
     def write(self, num=0):
+        self.ev['publishing-{0}'.format(self.name)].set()
         published = set()
         try:
             for i in range(self.pubnumloop):
@@ -118,3 +128,6 @@ class MessagingPublisher(Publish):
         except Exception as e:
             self.log.error(e)
             return False, published
+
+        finally:
+            self.ev['publishing-{0}'.format(self.name)].clear()

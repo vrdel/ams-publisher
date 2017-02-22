@@ -11,7 +11,7 @@ from datetime import datetime
 from messaging.error import MessageError
 from messaging.message import Message
 from messaging.queue.dqs import DQS
-from multiprocessing import Process
+from multiprocessing import Process, Event
 
 class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
@@ -38,16 +38,20 @@ class ConsumerQueue(Process):
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
-        raise SystemExit(0)
 
     def stats(self, reset=False):
-        self.log.info('{0} {1}: consumed {2} msgs in {3} hours'.format(self.__class__.__name__,
-                                                                       self.name,
-                                                                       self.nmsgs_consumed,
-                                                                       self.statseveryhour))
+        def statmsg(hours):
+            self.log.info('{0} {1}: consumed {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
+                                                                        self.name,
+                                                                        self.nmsgs_consumed,
+                                                                        hours))
         if reset:
+            statmsg(self.statseveryhour)
             self.nmsgs_consumed = 0
             self.prevstattime = int(datetime.now().strftime('%s'))
+        else:
+            sincelaststat = time.time() - self.prevstattime
+            statmsg(sincelaststat/3600)
 
     def run(self):
         self.prevstattime = int(datetime.now().strftime('%s'))
@@ -55,9 +59,19 @@ class ConsumerQueue(Process):
         while True:
             try:
                 if self.ev['term'].is_set():
+                    if self.publisher.nmsgs_published and self.ev['publishing-{0}'.format(self.name)].is_set():
+                        while self.ev['publishing-{0}'.format(self.name)].is_set():
+                            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
+                    self.stats()
+                    self.publisher.stats()
                     self.cleanup()
+                    self.ev['term'].clear()
+                    raise SystemExit(0)
 
                 if self.ev['usr1'].is_set():
+                    if self.publisher.nmsgs_published and not self.ev['publishing-{0}'.format(self.name)].is_set():
+                        while self.ev['publishing-{0}'.format(self.name)].is_set():
+                            time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
                     self.stats()
                     self.publisher.stats()
                     self.ev['usr1'].clear()
@@ -80,6 +94,7 @@ class ConsumerQueue(Process):
 
             except KeyboardInterrupt:
                 self.cleanup()
+                raise SystemExit(0)
 
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
@@ -157,6 +172,7 @@ def init_dirq_consume(**kwargs):
         kw.update(kwargs['conf']['topics'][k])
         kw.update({'log': kwargs['log']})
         kw.update({'ev': kwargs['ev']})
+        kw['ev'].update({'publishing-{0}'.format(k): Event()})
         kw.update({'evsleep': evsleep})
 
         consumers.append(ConsumerQueue(**kw))

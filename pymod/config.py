@@ -34,7 +34,7 @@ def parse_config(logger=None):
                 if section.startswith('General'):
                     confopts['general'] = ({'runasuser': config.get(section, 'RunAsUser')})
                     confopts['general'].update({'host': config.get(section, 'Host')})
-                    confopts['general'].update({'statseveryhour': int(config.get(section, 'StatsEveryHour'))})
+                    confopts['general'].update({'statseveryhour': float(config.get(section, 'StatsEveryHour'))})
                     confopts['general'].update({'publishmsgfile': eval(config.get(section, 'PublishMsgFile'))})
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
