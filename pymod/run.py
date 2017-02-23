@@ -64,6 +64,7 @@ class ConsumerQueue(Process):
                     self.stats()
                     self.publisher.stats()
                     self.cleanup()
+                    l.release()
                     self.ev['term'].clear()
                     raise SystemExit(0)
 
@@ -72,6 +73,7 @@ class ConsumerQueue(Process):
                     l.acquire(True)
                     self.stats()
                     self.publisher.stats()
+                    l.release()
                     self.ev['usr1'].clear()
 
                 if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
