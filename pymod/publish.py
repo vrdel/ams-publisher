@@ -118,7 +118,7 @@ class MessagingPublisher(Publish):
                     msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                     msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
                                                     data=m).dict(), msgs)
-                self.ams.publish(self.topic, msgs)
+                self.ams.publish(self.topic, msgs, timeout=60)
                 published.update([self.inmemq[e][0] for e in range(self.bulk)])
                 self.nmsgs_published += self.bulk
 
