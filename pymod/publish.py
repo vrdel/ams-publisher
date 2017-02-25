@@ -104,8 +104,8 @@ class MessagingPublisher(Publish):
         return msg.stringify()
 
     def write(self, num=0):
-        l = self.ev['publishing-{0}'.format(self.name)]
-        l.acquire(False)
+        lck = self.ev['publishing-{0}-lck'.format(self.name)]
+        lck.acquire(False)
         published = set()
         try:
             for i in range(self.pubnumloop):
@@ -131,4 +131,4 @@ class MessagingPublisher(Publish):
             return False, published
 
         finally:
-            l.release()
+            lck.release()

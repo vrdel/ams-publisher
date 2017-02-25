@@ -34,12 +34,10 @@ def daemon_start(context_daemon, logger, events, confopts, restart=False):
             context_daemon.pidfile.break_lock()
 
     def sigtermhandle(signum, frame):
-        logger.info('SIGTERM received')
         events['term'].set()
         events['termth'].set()
 
     def sigusrhandle(signum, frame):
-        logger.info('SIGUSR received')
         events['usr1'].set()
 
     context_daemon.signal_map = {

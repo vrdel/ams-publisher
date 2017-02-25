@@ -11,7 +11,7 @@ from datetime import datetime
 from messaging.error import MessageError
 from messaging.message import Message
 from messaging.queue.dqs import DQS
-from multiprocessing import Process, Lock
+from multiprocessing import Process, Lock, Event
 
 class ConsumerQueue(Process):
     def __init__(self, *args, **kwargs):
@@ -55,26 +55,29 @@ class ConsumerQueue(Process):
 
     def run(self):
         self.prevstattime = int(datetime.now().strftime('%s'))
+        termev = self.ev['publishing-{0}-term'.format(self.name)]
+        usr1ev = self.ev['publishing-{0}-usr1'.format(self.name)]
+        lck = self.ev['publishing-{0}-lck'.format(self.name)]
 
         while True:
             try:
-                if self.ev['term'].is_set():
-                    l = self.ev['publishing-{0}'.format(self.name)]
-                    l.acquire(True)
+                if termev.is_set():
+                    self.log.warning('Process {0} received SIGTERM'.format(self.name))
+                    lck.acquire(True)
                     self.stats()
                     self.publisher.stats()
                     self.cleanup()
-                    l.release()
-                    self.ev['term'].clear()
+                    lck.release()
+                    termev.clear()
                     raise SystemExit(0)
 
-                if self.ev['usr1'].is_set():
-                    l = self.ev['publishing-{0}'.format(self.name)]
-                    l.acquire(True)
+                if usr1ev.is_set():
+                    self.log.info('Process {0} received SIGUSR1'.format(self.name))
+                    lck.acquire(True)
                     self.stats()
                     self.publisher.stats()
-                    l.release()
-                    self.ev['usr1'].clear()
+                    lck.release()
+                    usr1ev.clear()
 
                 if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
                     ret, published = self.publisher.write(self.bulk)
@@ -172,7 +175,9 @@ def init_dirq_consume(**kwargs):
         kw.update(kwargs['conf']['topics'][k])
         kw.update({'log': kwargs['log']})
         kw.update({'ev': kwargs['ev']})
-        kw['ev'].update({'publishing-{0}'.format(k): Lock()})
+        kw['ev'].update({'publishing-{0}-lck'.format(k): Lock()})
+        kw['ev'].update({'publishing-{0}-usr1'.format(k): Event()})
+        kw['ev'].update({'publishing-{0}-term'.format(k): Event()})
         kw.update({'evsleep': evsleep})
 
         consumers.append(ConsumerQueue(**kw))
@@ -183,8 +188,14 @@ def init_dirq_consume(**kwargs):
     while True:
         if ev['term'].is_set():
             for c in consumers:
+                ev['publishing-{0}-term'.format(c.name)].set()
                 c.join(1)
             raise SystemExit(0)
+
+        if ev['usr1'].is_set():
+            for c in consumers:
+                ev['publishing-{0}-usr1'.format(c.name)].set()
+            ev['usr1'].clear()
 
         try:
             time.sleep(evsleep)
