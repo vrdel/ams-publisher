@@ -19,9 +19,10 @@ Requires:       python-psutil >= 4.3
 Requires:       python-daemon
 Requires:       python-argparse
 Requires:       avro
+Requires:       argo-ams-library
 
 %description
-Bridge from Nagios the ARGO Messaging system 
+Bridge from Nagios to the ARGO Messaging system 
 
 %prep
 %setup -q
