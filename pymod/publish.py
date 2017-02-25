@@ -109,7 +109,7 @@ class MessagingPublisher(Publish):
         published = set()
         try:
             for i in range(self.pubnumloop):
-                if self.type == 'metric_data':
+                if self.type == 'metric':
                     msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.bulk)]
                     msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                                 'type': 'metric_data'},
