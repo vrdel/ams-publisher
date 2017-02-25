@@ -58,6 +58,7 @@ class ConsumerQueue(Process):
         termev = self.ev['publishing-{0}-term'.format(self.name)]
         usr1ev = self.ev['publishing-{0}-usr1'.format(self.name)]
         lck = self.ev['publishing-{0}-lck'.format(self.name)]
+        evgup = self.ev['publishing-{0}-giveup'.format(self.name)]
 
         while True:
             try:
@@ -84,10 +85,20 @@ class ConsumerQueue(Process):
                     if ret:
                         self.remove_dirq_msgs()
                     elif published:
+                        self.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
+                        self.stats()
+                        self.publisher.stats()
                         self.remove_dirq_msgs(published)
                         self.unlock_dirq_msgs(set(e[0] for e in self.inmemq).difference(published))
+                        evgup.set()
+                        raise SystemExit(0)
                     else:
+                        self.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
+                        self.stats()
+                        self.publisher.stats()
                         self.unlock_dirq_msgs()
+                        evgup.set()
+                        raise SystemExit(0)
 
                 if int(datetime.now().strftime('%s')) - self.prevstattime >= self.statseveryhour * 3600:
                     self.stats(reset=True)
@@ -178,6 +189,7 @@ def init_dirq_consume(**kwargs):
         kw['ev'].update({'publishing-{0}-lck'.format(k): Lock()})
         kw['ev'].update({'publishing-{0}-usr1'.format(k): Event()})
         kw['ev'].update({'publishing-{0}-term'.format(k): Event()})
+        kw['ev'].update({'publishing-{0}-giveup'.format(k): Event()})
         kw.update({'evsleep': evsleep})
 
         consumers.append(ConsumerQueue(**kw))
@@ -186,6 +198,12 @@ def init_dirq_consume(**kwargs):
         consumers[-1].start()
 
     while True:
+        for c in consumers:
+            if ev['publishing-{0}-giveup'.format(c.name)].is_set():
+                c.terminate()
+                c.join(1)
+                ev['publishing-{0}-giveup'.format(c.name)].clear()
+
         if ev['term'].is_set():
             for c in consumers:
                 ev['publishing-{0}-term'.format(c.name)].set()

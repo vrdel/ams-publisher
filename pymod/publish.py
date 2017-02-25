@@ -10,6 +10,7 @@ from io import BytesIO
 
 from argo_ams_library.ams import ArgoMessagingService
 from argo_ams_library.amsmsg import AmsMessage
+from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
 class Publish(object):
     def __init__(self, *args, **kwargs):
@@ -104,31 +105,45 @@ class MessagingPublisher(Publish):
         return msg.stringify()
 
     def write(self, num=0):
+        t = 1
         lck = self.ev['publishing-{0}-lck'.format(self.name)]
-        lck.acquire(False)
-        published = set()
-        try:
-            for i in range(self.pubnumloop):
-                if self.type == 'metric':
-                    msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.bulk)]
-                    msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
-                                                                'type': 'metric_data'},
-                                                    data=m[1]).dict(), msgs)
-                elif self.type == 'alarm':
-                    msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.bulk)]
-                    msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
-                                                    data=m).dict(), msgs)
-                self.ams.publish(self.topic, msgs, timeout=60)
-                published.update([self.inmemq[e][0] for e in range(self.bulk)])
-                self.nmsgs_published += self.bulk
+        for i in range(self.pubnumloop):
+            if self.type == 'metric':
+                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.bulk)]
+                msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
+                                                            'type': 'metric_data'},
+                                                data=m[1]).dict(), msgs)
+            elif self.type == 'alarm':
+                msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.bulk)]
+                msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
+                                                data=m).dict(), msgs)
+            try:
+                while t <= 3:
+                    try:
+                        lck.acquire(False)
+                        published = set()
+                        self.ams.publish(self.topic, msgs, timeout=60)
+                        published.update([self.inmemq[e][0] for e in range(self.bulk)])
+                        self.nmsgs_published += self.bulk
+                        self.inmemq.rotate(-self.bulk)
 
-                self.inmemq.rotate(-self.bulk)
+                        return True, published
 
-            return True, published
+                    except (AmsServiceException, AmsConnectionException)  as e:
+                        self.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
-        except Exception as e:
-            self.log.error(e)
-            return False, published
+                        if t == 3:
+                            raise e
+                        else:
+                            s = 30
+                            time.sleep(s)
+                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
+                            pass
 
-        finally:
-            lck.release()
+                    finally:
+                        lck.release()
+
+                    t += 1
+
+            except (AmsServiceException, AmsConnectionException) as e:
+                return False, published
