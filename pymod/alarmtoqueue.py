@@ -24,16 +24,15 @@ def build_msg(args, *headers):
     msg.header = dict()
     msg.body = str()
 
-    timestamp, service, hostname, metric, status, nagioshost = headers
+    timestamp, service, hostname, testname, status, nagioshost = headers
 
-    msg.header.update({'timestamp': timestamp.encode('utf-8')})
-    msg.header.update({'service': service.encode('utf-8')})
-    msg.header.update({'hostname': hostname.encode('utf-8')})
-    msg.header.update({'metric': metric.encode('utf-8')})
+    msg.header.update({'execution_time': timestamp.encode('utf-8')})
+    msg.header.update({'service_flavour': service.encode('utf-8')})
+    msg.header.update({'node_name': hostname.encode('utf-8')})
+    msg.header.update({'test_name': testname.encode('utf-8')})
     msg.header.update({'status': status.encode('utf-8')})
-    msg.header.update({'monitoring_host': nagioshost.encode('utf-8')})
 
-    for bs in ['summary', 'message', 'vofqan', 'voname', 'roc']:
+    for bs in ['details', 'vo', 'site', 'roc']:
         code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
@@ -53,14 +52,13 @@ def main():
     parser.add_argument('--timestamp', required=True, type=str)
     parser.add_argument('--service', required=True, type=str)
     parser.add_argument('--hostname', required=True, type=str)
-    parser.add_argument('--metric', required=True, type=str)
+    parser.add_argument('--testname', required=True, type=str)
     parser.add_argument('--status', required=True, type=str)
 
     # msg body
-    parser.add_argument('--summary', required=False, type=str)
-    parser.add_argument('--message', required=False, type=str)
-    parser.add_argument('--vofqan', required=False, type=str)
-    parser.add_argument('--voname', required=False, type=str)
+    parser.add_argument('--details', required=False, type=str)
+    parser.add_argument('--vo', required=False, type=str)
+    parser.add_argument('--site', required=False, type=str)
     parser.add_argument('--roc', required=False, type=str)
 
     args = parser.parse_args()
@@ -71,20 +69,13 @@ def main():
         granularity = config.get_queue_granul(args.queue)
         mq = DQS(path=args.queue, granularity=granularity)
 
-        if ',' in args.service:
-            services = args.service.split(',')
-            services = [s.strip() for s in services]
-            for service in services:
-                msg = build_msg(args, args.timestamp, service, args.hostname, \
-                                args.metric, args.status, nagioshost)
-                mq.add_message(msg)
-        else:
-            msg = build_msg(args, args.timestamp, args.service, args.hostname, \
-                            args.metric, args.status, nagioshost)
-            mq.add_message(msg)
+        msg = build_msg(args, args.timestamp, args.service, args.hostname, \
+                        args.testname, args.status, nagioshost)
+        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
+        mq.add_message(msg)
 
     except MessageError as e:
-        logger.error('Error constructing metric - %s', repr(e))
+        logger.error('Error constructing alarm - %s', repr(e))
 
     except (OSError, IOError) as e:
         logger.error(e)

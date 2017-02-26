@@ -5,7 +5,7 @@ conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 def get_queue_granul(queue):
     confopts = parse_config()
     for k, v in confopts['queues'].iteritems():
-        if confopts['queues'][k]['queue'].startswith(queue):
+        if confopts['queues'][k]['directory'].startswith(queue):
             return confopts['queues'][k]['granularity']
 
 def parse_config(logger=None):
