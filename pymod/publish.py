@@ -118,11 +118,11 @@ class MessagingPublisher(Publish):
                 msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
                                                 data=m).dict(), msgs)
             try:
-                while t <= 3:
+                while t <= self.publishretry:
                     try:
                         lck.acquire(False)
                         published = set()
-                        self.ams.publish(self.topic, msgs, timeout=60)
+                        self.ams.publish(self.topic, msgs, timeout=self.publishtimeout)
                         published.update([self.inmemq[e][0] for e in range(self.bulk)])
                         self.nmsgs_published += self.bulk
                         self.inmemq.rotate(-self.bulk)
@@ -132,10 +132,11 @@ class MessagingPublisher(Publish):
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
-                        if t == 3:
+                        if t == self.publishretry:
                             raise e
                         else:
                             s = 30
+                            # added some exponential jitter slowdown here
                             time.sleep(s)
                             self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                             pass

@@ -181,6 +181,8 @@ def init_dirq_consume(**kwargs):
                 raise SystemExit(1)
 
             kw.update({'publisher': MessagingPublisher})
+            kw.update({'publishtimeout': kwargs['conf']['general']['publishtimeout']})
+            kw.update({'publishretry': kwargs['conf']['general']['publishretry']})
 
         kw.update(kwargs['conf']['queues'][k])
         kw.update(kwargs['conf']['topics'][k])
