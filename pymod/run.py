@@ -22,10 +22,10 @@ class ConsumerQueue(Process):
         self.sess_consumed = 0
 
         self.seenmsgs = set()
-        self.dirq = DQS(path=self.queue)
+        self.dirq = DQS(path=self.directory)
         self.inmemq = deque()
-        self.pubnumloop = 1 if self.bulk > self.queuerate \
-                          else self.queuerate / self.bulk
+        self.pubnumloop = 1 if self.bulk > self.rate \
+                          else self.rate / self.bulk
         kwargs.update({'inmemq': self.inmemq, 'pubnumloop': self.pubnumloop,
                        'dirq': self.dirq, 'filepublisher': False})
         self.publisher = self.publisher(*args, **kwargs)
@@ -80,7 +80,7 @@ class ConsumerQueue(Process):
                     lck.release()
                     usr1ev.clear()
 
-                if self.consume_dirq_msgs(max(self.bulk, self.queuerate)):
+                if self.consume_dirq_msgs(max(self.bulk, self.rate)):
                     ret, published = self.publisher.write(self.bulk)
                     if ret:
                         self.remove_dirq_msgs()
@@ -104,7 +104,7 @@ class ConsumerQueue(Process):
                     self.stats(reset=True)
                     self.publisher.stats(reset=True)
 
-                time.sleep(decimal.Decimal(1) / decimal.Decimal(self.queuerate))
+                time.sleep(decimal.Decimal(1) / decimal.Decimal(self.rate))
 
             except KeyboardInterrupt:
                 self.cleanup()

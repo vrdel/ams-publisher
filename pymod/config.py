@@ -9,7 +9,7 @@ def get_queue_granul(queue):
             return confopts['queues'][k]['granularity']
 
 def parse_config(logger=None):
-    reqsections = set(['dirq_', 'topic_', 'general'])
+    reqsections = set(['queue_', 'topic_', 'general'])
     confopts = dict()
 
     try:
@@ -41,11 +41,11 @@ def parse_config(logger=None):
                     confopts['general'].update({'msgavroschema': config.get(section, 'MsgAvroSchema')})
                     confopts['general'].update({'publishretry': int(config.get(section, 'PublishRetry'))})
                     confopts['general'].update({'publishtimeout': int(config.get(section, 'PublishTimeout'))})
-                if section.startswith('DirQ_'):
+                if section.startswith('Queue_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
-                    dirqopts['queue'] = config.get(section, 'Queue')
-                    dirqopts['queuerate'] = int(config.get(section, 'QueueRate'))
+                    dirqopts['directory'] = config.get(section, 'Directory')
+                    dirqopts['rate'] = int(config.get(section, 'Rate'))
                     dirqopts['purge'] = bool(config.get(section, 'Purge'))
                     dirqopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
                     dirqopts['maxtemp'] = int(config.get(section, 'MaxTemp'))
@@ -68,12 +68,12 @@ def parse_config(logger=None):
                     raise ConfigParser.NoSectionError('No topic topic_%s defined' % k)
                     raise SystemExit(1)
 
-                if topics[k]['bulk'] < queues[k]['queuerate'] and \
-                        queues[k]['queuerate'] % topics[k]['bulk']:
+                if topics[k]['bulk'] < queues[k]['rate'] and \
+                        queues[k]['rate'] % topics[k]['bulk']:
                     if logger:
-                        logger.error('dirq_%s: QueueRate should be multiple of BulkSize' % k)
+                        logger.error('queue_%s: Rate should be multiple of BulkSize' % k)
                     else:
-                        sys.stderr.write('dirq_%s: QueueRate should be multiple of BulkSize\n' % k)
+                        sys.stderr.write('queue_%s: Rate should be multiple of BulkSize\n' % k)
                     raise SystemExit(1)
 
             if all([confopts['general']['publishmsgfile'] == False, confopts['general']['publishargomessaging'] == False]):
