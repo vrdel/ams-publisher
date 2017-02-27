@@ -71,7 +71,6 @@ def main():
 
         msg = build_msg(args, args.timestamp, args.service, args.hostname, \
                         args.testname, args.status, nagioshost)
-        import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
         mq.add_message(msg)
 
     except MessageError as e:
