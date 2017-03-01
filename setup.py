@@ -24,7 +24,8 @@ setup(
     url = 'https://github.com/ARGOeu/argo-nagios-ams-publisher',
     package_dir = {'argo_nagios_ams_publisher': 'pymod/'},
     packages = ['argo_nagios_ams_publisher'],
-    data_files = [('/etc/argo-nagios-ams-publisher/', glob.glob('config/*.conf')),
-                  ('/etc/init.d/', glob.glob('init/ams-publisher'))],
-    scripts = glob.glob('bin/*') + glob.glob('helpers/*')
-    )
+    data_files = [('/etc/argo-nagios-ams-publisher/', ['config/ams-publisher.conf', 'config/metric_data.avsc']),
+                  ('/etc/init.d/', ['init/ams-publisher'])],
+    scripts = ['bin/ams-alarm-to-queue', 'bin/ams-metric-to-queue',
+               'bin/ams-publisherd', 'helpers/ams-msg-generator.py',
+               'helpers/ams-queue-consume.py'])
