@@ -46,6 +46,8 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %dir %{_localstatedir}/run/%{name}/
+%dir %{_localstatedir}/spool/%{name}/metrics/
+%dir %{_localstatedir}/spool/%{name}/alarms
 
 %post
 /sbin/chkconfig --add ams-publisher 
