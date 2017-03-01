@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+
+from argo_nagios_ams_publisher.config import parse_config
+from argo_nagios_ams_publisher.log import Logger
+from argo_nagios_ams_publisher.run import init_dirq_consume
+
+import argparse
+import daemon
+import daemon.pidlockfile
+import errno
+import multiprocessing
+import os
+import psutil
+import pwd
+import signal
+import sys
+import threading
+
+pidfile = '/var/run/argo-nagios-ams-publisher/pid'
+logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
+
+def get_userids(user):
+    return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
+
+def daemon_start(context_daemon, logger, events, confopts, restart=False):
+    if context_daemon.pidfile.is_locked() and not \
+            context_daemon.pidfile.i_am_locking():
+        pid = context_daemon.pidfile.read_pid()
+        try:
+            psutil.Process(pid=pid)
+            logger.info('Already running (%s)' % pid)
+            return 0
+        except psutil.NoSuchProcess:
+            context_daemon.pidfile.break_lock()
+
+    def sigtermhandle(signum, frame):
+        events['term'].set()
+        events['termth'].set()
+
+    def sigusrhandle(signum, frame):
+        events['usr1'].set()
+
+    context_daemon.signal_map = {
+        signal.SIGTERM: sigtermhandle,
+        signal.SIGUSR1: sigusrhandle
+    }
+
+    uid, gid = get_userids(confopts['general']['runasuser'])
+    context_daemon.uid = uid
+    context_daemon.gid = gid
+    os.chown(logger.fileloghandle.name, uid, gid)
+    context_daemon.files_preserve = [logger.fileloghandle]
+
+    if not restart:
+        logger.info('Started')
+
+    context_daemon.open()
+    with context_daemon:
+        init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=True)
+
+def daemon_stop(context_daemon, logger, restart=False):
+    if context_daemon.pidfile.is_locked():
+        pid = context_daemon.pidfile.read_pid()
+
+        try:
+            process = psutil.Process(pid=pid)
+        except psutil.NoSuchProcess:
+            context_daemon.pidfile.break_lock()
+            if not restart:
+                logger.info('Not running - cleaning stale pidfile')
+        else:
+            process.terminate()
+            pgone, palive = psutil.wait_procs([process])
+
+            if not restart:
+                logger.info('Stopping (%s)' % pid)
+
+            for p in palive:
+                p.kill()
+
+    elif not restart:
+        logger.info('Not running')
+
+    return 0
+
+def daemon_status(context_daemon, logger):
+    if context_daemon.pidfile.is_locked() and not \
+            context_daemon.pidfile.i_am_locking():
+        pid = context_daemon.pidfile.read_pid()
+
+        try:
+            psutil.Process(pid=pid)
+        except psutil.NoSuchProcess:
+            logger.info('Not running - stale pidfile')
+            return 1
+        else:
+            logger.info('Running (%s)' % pid)
+            return 0
+    else:
+        logger.info('Not running')
+        return 3
+
+def pidfiledir(logger, pidfile, confopts):
+    try:
+        if not os.path.exists(os.path.dirname(pidfile)):
+            dirp = os.path.dirname(pidfile)
+            os.makedirs(dirp)
+            uid, gid = get_userids(confopts['general']['runasuser'])
+            os.chown(dirp, uid, gid)
+    except (OSError, IOError) as e:
+        if e.args[0] != errno.EEXIST:
+            logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
+            raise SystemExit(1)
+
+def daemonizer(args, logger, events, confopts):
+    pidfiledir(logger, pidfile, confopts)
+
+    context_daemon = daemon.DaemonContext()
+    context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
+
+    if args.daemon == 'start':
+        daemon_start(context_daemon, logger, events, confopts)
+
+    elif args.daemon == 'stop':
+        ret = daemon_stop(context_daemon, logger)
+        raise SystemExit(ret)
+
+    elif args.daemon == 'restart':
+        daemon_stop(context_daemon, logger, restart=True)
+        daemon_start(context_daemon, logger, events, confopts, restart=True)
+
+    elif args.daemon == 'status':
+        ret = daemon_status(context_daemon, logger)
+        raise SystemExit(ret)
+
+def main():
+    lobj = Logger(sys.argv[0], logfile)
+    logger = lobj.get()
+    events = dict()
+
+    termev = multiprocessing.Event()
+    usr1ev = multiprocessing.Event()
+    termevth = threading.Event()
+    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
+
+    confopts = parse_config(logger)
+
+    parser = argparse.ArgumentParser(prog='ams-publisherd')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-n', dest='nofork', action='store_true',
+                        help='do not fork into background')
+    group.add_argument('-d', dest='daemon', type=str,
+                       help='daemon arguments: start, stop, restart, status', metavar='')
+    args = parser.parse_args()
+
+    if args.nofork:
+        try:
+            init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=False)
+        except KeyboardInterrupt:
+            raise SystemExit(1)
+
+    elif args.daemon:
+        daemonizer(args, logger, events, confopts)
+
+main()

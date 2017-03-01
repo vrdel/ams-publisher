@@ -1,2 +1,2 @@
 # argo-nagios-ams-publisher
-# argo-nagios-ams-publisher
+Bridge from Nagios to the ARGO Messaging system 
