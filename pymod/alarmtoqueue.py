@@ -11,6 +11,7 @@ import argparse
 import os
 import pwd
 import sys
+import datetime
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
@@ -45,11 +46,11 @@ def main():
     logger = lobj.get()
     confopts = config.parse_config(logger)
     nagioshost = confopts['general']['host']
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
     parser.add_argument('--queue', required=True, type=str)
 
     # msg headers
-    parser.add_argument('--timestamp', required=True, type=str)
     parser.add_argument('--service', required=True, type=str)
     parser.add_argument('--hostname', required=True, type=str)
     parser.add_argument('--testname', required=True, type=str)
@@ -69,7 +70,7 @@ def main():
         granularity = config.get_queue_granul(args.queue)
         mq = DQS(path=args.queue, granularity=granularity)
 
-        msg = build_msg(args, args.timestamp, args.service, args.hostname, \
+        msg = build_msg(args, timestamp, args.service, args.hostname, \
                         args.testname, args.status, nagioshost)
         mq.add_message(msg)
 

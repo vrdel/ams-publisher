@@ -4,7 +4,7 @@
 
 Name:           argo-nagios-ams-publisher
 Version:        0.1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
@@ -85,6 +85,8 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Wed Mar 1 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-3%{?dist}
+- timestamp is automatically generated and not taken from nagios 
 * Wed Mar 1 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-2%{?dist}
 - added missing queue spools
 - added missing spec dependancies
