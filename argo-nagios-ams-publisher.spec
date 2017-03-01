@@ -4,7 +4,7 @@
 
 Name:           argo-nagios-ams-publisher
 Version:        0.1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
@@ -46,6 +46,8 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %dir %{_localstatedir}/run/%{name}/
+%dir %{_localstatedir}/spool/%{name}/metrics/
+%dir %{_localstatedir}/spool/%{name}/alarms/
 
 %post
 /sbin/chkconfig --add ams-publisher 
@@ -81,5 +83,7 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Wed Mar 1 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-2%{?dist}
+- added missing queue spools
 * Wed Feb 15 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-1%{?dist}
 - first version 
