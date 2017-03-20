@@ -1,5 +1,6 @@
 import avro.schema
 import time
+import json
 
 from avro.io import BinaryEncoder
 from avro.io import DatumReader
@@ -70,6 +71,18 @@ class MessagingPublisher(Publish):
                                         token=self.key,
                                         project=self.project)
 
+    def body2dict(self, body):
+        d = dict()
+        bodylines = body.split('\n')
+        for line in bodylines:
+            split = line.split(': ', 1)
+            if len(split) > 1:
+                key = split[0]
+                value = split[1]
+                d[key] = value.decode('utf-8', 'replace')
+
+        return d
+
     def construct_metricmsg(self, msg):
         def _part_date(timestamp):
             import datetime
@@ -90,19 +103,15 @@ class MessagingPublisher(Publish):
 
         plainmsg = dict()
         plainmsg.update(msg.header)
-
-        bodylines = msg.body.split('\n')
-        for line in bodylines:
-            split = line.split(': ', 1)
-            if len(split) > 1:
-                key = split[0]
-                value = split[1]
-                plainmsg[key] = value.decode('utf-8', 'replace')
+        plainmsg.update(self.body2dict(msg.body))
 
         return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
 
     def construct_alarmsg(self, msg):
-        return msg.stringify()
+        d = self.body2dict(msg.body)
+        d.update(msg.header)
+
+        return json.dumps(d)
 
     def write(self, num=0):
         t = 1
@@ -135,8 +144,8 @@ class MessagingPublisher(Publish):
                         if t == self.publishretry:
                             raise e
                         else:
+                            # add some exponential jitter slowdown here
                             s = 30
-                            # added some exponential jitter slowdown here
                             time.sleep(s)
                             self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                             pass
