@@ -33,7 +33,7 @@ def build_msg(args, *headers):
     msg.header.update({'test_name': testname.encode('utf-8')})
     msg.header.update({'status': status.encode('utf-8')})
 
-    for bs in ['details', 'vo', 'site', 'roc']:
+    for bs in ['details', 'vo', 'site', 'roc', 'urlhistory', 'urlhelp']:
         code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
@@ -61,6 +61,8 @@ def main():
     parser.add_argument('--vo', required=False, type=str)
     parser.add_argument('--site', required=False, type=str)
     parser.add_argument('--roc', required=False, type=str)
+    parser.add_argument('--urlhistory', required=False, type=str)
+    parser.add_argument('--urlhelp', required=False, type=str)
 
     args = parser.parse_args()
 

@@ -3,7 +3,7 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-nagios-ams-publisher
-Version:        0.1.1
+Version:        0.1.2
 Release:        1%{?dist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -85,6 +85,8 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Thu Mar 30 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.2-1%{?dist}
+- ARGO-764 Add url_history and url_help message fields for alarms 
 * Tue Mar 14 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.1-1%{?dist}
 - ARGO-732 Structure the body of alarm message as JSON object 
 * Wed Mar 1 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.0-3%{?dist}
