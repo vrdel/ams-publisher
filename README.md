@@ -19,9 +19,3 @@ Some of the main features are:
 - configurable watch rate for queue
 - configurable bulk of messages sent to ARGO Messaging system
 - purger that will keep queue only with sound data
-
-## Installation 
-
-## Configuration
-
-## Examples
