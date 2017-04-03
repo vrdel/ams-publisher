@@ -2,7 +2,7 @@
 
 ## Description 
 
-`argo-nagios-ams-publisher` is component acting as bridge from Nagios to ARGO Messaging system. It's integral part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that are results of Nagios tests. It is running as a unix daemon and it consists of two subsystems:
+`argo-nagios-ams-publisher` is a component acting as bridge from Nagios to ARGO Messaging system. It's integral part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that are results of Nagios tests. It is running as a unix daemon and it consists of two subsystems:
 - queueing mechanism 
 - publishing/dispatching part
 
