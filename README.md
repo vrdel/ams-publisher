@@ -1,21 +1,21 @@
 # argo-nagios-ams-publisher
 
-## Introduction 
+## Description 
 
-Bridge from Nagios to the ARGO Messaging system. The argo-nagios-ams-publisher is responsible for handling the nagios messages and publishes them to specific topic to the AMS System.
+`argo-nagios-ams-publisher` is a component acting as bridge from Nagios to ARGO Messaging system. It's integral part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that are results of Nagios tests. It is running as a unix daemon and it consists of two subsystems:
+- queueing mechanism 
+- publishing/dispatching part
 
-Until now ARGO uses the nagios-msg component. The msg is responsible for populating the nagios checks with extra information (nagios box, service etc). This component is also using: a)  argo-msg-cache: Component argo-msg-cache retrieves list of message broker URLs from BDII, checks status of each broker and stores brokers to a file, and b) msg-to-handler: Component msg-to-handler subscribes to set topics or queues on message broker and handles messages.  
+Messages are cached in local queue with the help of OCSP Nagios calls and each queue is being monitored by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging
+system and drains the queue. `argo-nagios-ams-publisher` is written in multiprocessing manner so there is support for multiple queue/publish pairs where for each, new worker process will be spawned. 
 
-## Characteristics 
+### Features
 
-Some of the main characteristics of ams-publisher:
-
- - Configurable bulk size consume and publish
- - Use of argo-ams-library for publishing to Argo Messaging service
- - Differentiate two types of publishing to AMS: metric_data and alarms
- - Added url_history and url_help message fields for alarms
- - Avro message payload serialization for metric_data publisher
- - Introduce cache producer for alarms
- - Ensure proper cleanup procedures leaving local cache in uncorrupted state
- - On exiting, wait for active publishers to finish
-
+Some of the main features are:
+- efficient and scalable directory based queueing
+- configurable number of queue/publish pairs
+- two type of publishers: metric results and alarms
+- avro serialization of metric results
+- configurable watch rate for queue
+- configurable bulk of messages sent to ARGO Messaging system
+- purger that will keep queue only with sound data
