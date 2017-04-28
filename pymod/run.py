@@ -121,6 +121,8 @@ class ConsumerQueue(Process):
                 return True
         try:
             for name in self.dirq:
+                if os.stat(self.directory + name).st_size < 8:
+                    os.unlink(self.directory + name)
                 if name in self.seenmsgs:
                     continue
                 self.seenmsgs.update([name])
