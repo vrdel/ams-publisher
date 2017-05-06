@@ -2,28 +2,25 @@ import threading
 import os
 import sys
 import time
+from argo_nagios_ams_publisher.shared import Shared
 
 from datetime import datetime
 
 class Purger(threading.Thread):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, log, worker=None):
         threading.Thread.__init__(self)
-        self.init_attrs(kwargs)
-        if not self.daemonized:
+        self.shared = Shared(worker=worker)
+        self.log = log
+        self.name = worker
+        self.dirq = self.shared.runtime['inmemq']
+        if not self.shared.runtime['daemonized']:
             self.daemon = True
         self.start()
-
-    def init_attrs(self, confopts):
-        for k in confopts.iterkeys():
-            code = "self.{0} = confopts.get('{0}')".format(k)
-            exec code
 
     def run(self):
         wassec = int(datetime.now().strftime('%s'))
         while True:
-            if self.ev['termth'].is_set():
-                break
-            if int(datetime.now().strftime('%s')) - wassec >= self.purgeeverysec:
-                self.dirq.purge(maxtemp=self.maxtemp, maxlock=self.maxlock)
+            if int(datetime.now().strftime('%s')) - wassec >= self.shared.queue['purgeeverysec']:
+                self.dirq.purge(maxtemp=self.shared.queue['maxtemp'], maxlock=self.shared.queue['maxlock'])
                 wassec = int(datetime.now().strftime('%s'))
-            time.sleep(self.evsleep)
+            time.sleep(self.shared.runtime['evsleep'])

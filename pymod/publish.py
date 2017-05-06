@@ -11,13 +11,16 @@ from io import BytesIO
 
 from argo_ams_library.ams import ArgoMessagingService
 from argo_ams_library.amsmsg import AmsMessage
+from argo_nagios_ams_publisher.shared import Shared
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
 class Publish(object):
-    def __init__(self, *args, **kwargs):
-        self.init_attrs(kwargs)
+    def __init__(self, log, worker=None):
+        self.log = log
+        self.shared = Shared(worker=worker)
         self.nmsgs_published = 0
         self.laststattime = time.time()
+        self.name = worker
 
     def init_attrs(self, confopts):
         for k in confopts.iterkeys():
@@ -32,7 +35,7 @@ class Publish(object):
                                                                     hours
                                                                     ))
         if reset:
-            statmsg(self.statseveryhour)
+            statmsg(self.shared.general['statseveryhour'])
             self.nmsgs_published = 0
             self.laststattime = time.time()
         else:
@@ -43,8 +46,13 @@ class Publish(object):
         pass
 
 class FilePublisher(Publish):
-    def __init__(self, *args, **kwargs):
-        super(FilePublisher, self).__init__(*args, **kwargs)
+    def __init__(self, log, worker=None):
+        self.log = log
+        self.shared = Shared(worker=worker)
+        self.inmemq = self.shared.runtime['inmemq']
+        self.pubnumloop = self.shared.runtime['pubnumloop']
+        self.worker = worker
+        super(FilePublisher, self).__init__(log=log, worker=worker)
 
     def write(self, num=0):
         published = set()
@@ -65,11 +73,17 @@ class FilePublisher(Publish):
             return False, published
 
 class MessagingPublisher(Publish):
-    def __init__(self, *args, **kwargs):
-        super(MessagingPublisher, self).__init__(*args, **kwargs)
-        self.ams = ArgoMessagingService(endpoint=self.host,
-                                        token=self.key,
-                                        project=self.project)
+    def __init__(self, log, worker=None):
+        self.log = log
+        self.shared = Shared(worker=worker)
+        self.inmemq = self.shared.runtime['inmemq']
+        self.pubnumloop = self.shared.runtime['pubnumloop']
+        self.schema = self.shared.runtime['schema']
+        super(MessagingPublisher, self).__init__(log=log, worker=worker)
+        self.ams = ArgoMessagingService(endpoint=self.shared.topic['host'],
+                                        token=self.shared.topic['key'],
+                                        project=self.shared.topic['project'])
+        self.name = worker
 
     def body2dict(self, body):
         d = dict()
@@ -115,39 +129,39 @@ class MessagingPublisher(Publish):
 
     def write(self, num=0):
         t = 1
-        lck = self.ev['publishing-{0}-lck'.format(self.name)]
+        lck = self.shared.event('lck', self.name)
         for i in range(self.pubnumloop):
-            if self.type == 'metric':
-                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.bulk)]
+            if self.shared.topic['type'] == 'metric':
+                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in self.shared.topic['bulk']]
                 msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                             'type': 'metric_data'},
                                                 data=m[1]).dict(), msgs)
-            elif self.type == 'alarm':
-                msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.bulk)]
+            elif self.shared.topic['type'] == 'alarm':
+                msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
                 msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
                                                 data=m).dict(), msgs)
             try:
-                while t <= self.publishretry:
+                while t <= self.shared.general['publishretry']:
                     try:
                         lck.acquire(False)
                         published = set()
-                        self.ams.publish(self.topic, msgs, timeout=self.publishtimeout)
-                        published.update([self.inmemq[e][0] for e in range(self.bulk)])
-                        self.nmsgs_published += self.bulk
-                        self.inmemq.rotate(-self.bulk)
+                        self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.general['publishtimeout'])
+                        published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
+                        self.nmsgs_published +=  self.shared.topic['bulk']
+                        self.inmemq.rotate(-self.shared.topic['bulk'])
 
                         return True, published
 
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
-                        if t == self.publishretry:
+                        if t == self.shared.general['publishretry']:
                             raise e
                         else:
                             # add some exponential jitter slowdown here
                             s = 30
                             time.sleep(s)
-                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
+                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.worker, t, s))
                             pass
 
                     finally:

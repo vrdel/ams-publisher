@@ -3,6 +3,7 @@
 from argo_nagios_ams_publisher.config import parse_config
 from argo_nagios_ams_publisher.log import Logger
 from argo_nagios_ams_publisher.run import init_dirq_consume
+from argo_nagios_ams_publisher.shared import Shared
 
 import argparse
 import daemon
@@ -144,6 +145,7 @@ def main():
     events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
 
     confopts = parse_config(logger)
+    shared = Shared(confopts=confopts)
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)
@@ -155,7 +157,7 @@ def main():
 
     if args.nofork:
         try:
-            init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=False)
+            init_dirq_consume(workers=shared.workers, log=logger, ev=events, daemonized=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
