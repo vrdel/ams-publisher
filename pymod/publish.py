@@ -132,7 +132,7 @@ class MessagingPublisher(Publish):
         lck = self.shared.event('lck', self.name)
         for i in range(self.pubnumloop):
             if self.shared.topic['type'] == 'metric':
-                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in self.shared.topic['bulk']]
+                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
                 msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                             'type': 'metric_data'},
                                                 data=m[1]).dict(), msgs)
