@@ -1,6 +1,4 @@
 import threading
-import os
-import sys
 import time
 from argo_nagios_ams_publisher.shared import Shared
 
@@ -20,6 +18,8 @@ class Purger(threading.Thread):
     def run(self):
         wassec = int(datetime.now().strftime('%s'))
         while True:
+            if self.shared.event('termth').is_set():
+                break
             if int(datetime.now().strftime('%s')) - wassec >= self.shared.queue['purgeeverysec']:
                 self.dirq.purge(maxtemp=self.shared.queue['maxtemp'], maxlock=self.shared.queue['maxlock'])
                 wassec = int(datetime.now().strftime('%s'))

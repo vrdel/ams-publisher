@@ -17,10 +17,16 @@ class Shared(object):
             self.queue = self._queues[worker]
             self.topic = self._topics[worker]
 
-    def add_event(self, name, ev):
+    def add_event(self, name, ev, glob=False):
         if not getattr(self, 'events', False):
-            self.__class__.events = dict()
-        self.__class__.events.update({'{0}-{1}'.format(self.worker, name): ev})
+            self.events = dict()
+        if glob:
+            self.events.update({'{0}-{1}'.format('global', name): ev})
+        else:
+            self.events.update({'{0}-{1}'.format(self.worker, name): ev})
 
-    def event(self, name, worker):
-        return self.__class__.events.get('{0}-{1}'.format(self.worker, name))
+    def event(self, name, worker=None):
+        if not worker:
+            return self.events.get('{0}-{1}'.format('global', name))
+        else:
+            return self.events.get('{0}-{1}'.format(self.worker, name))

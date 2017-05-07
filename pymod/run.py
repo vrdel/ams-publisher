@@ -6,7 +6,7 @@ from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.shared import Shared
 from multiprocessing import Event, Lock
 
-def init_dirq_consume(workers, log, ev, daemonized):
+def init_dirq_consume(workers, log, daemonized):
     evsleep = 2
     consumers = list()
 
@@ -14,7 +14,6 @@ def init_dirq_consume(workers, log, ev, daemonized):
         shared = Shared(worker=w)
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
-        kw = dict()
 
         if shared.general['publishmsgfile']:
             shared.runtime.update(publisher=FilePublisher)
@@ -29,8 +28,6 @@ def init_dirq_consume(workers, log, ev, daemonized):
 
             shared.runtime.update(publisher=MessagingPublisher)
 
-        kw.update({'log': log})
-        kw.update({'ev': ev})
         shared.add_event('lck', Lock())
         shared.add_event('usr1', Event())
         shared.add_event('term', Event())
@@ -50,16 +47,16 @@ def init_dirq_consume(workers, log, ev, daemonized):
                 c.join(1)
                 shared.event('giveup', c.name).clear()
 
-        if ev['term'].is_set():
+        if shared.event('term').is_set():
             for c in consumers:
                 shared.event('term', c.name).set()
                 c.join(1)
             raise SystemExit(0)
 
-        if ev['usr1'].is_set():
+        if shared.event('usr1').is_set():
             for c in consumers:
                 shared.event('usr1', c.name).set()
-            ev['usr1'].clear()
+            shared.event('usr1').clear()
 
         try:
             time.sleep(evsleep)
