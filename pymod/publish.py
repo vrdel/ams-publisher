@@ -73,7 +73,7 @@ class FilePublisher(Publish):
             return False, published
 
 class MessagingPublisher(Publish):
-    def __init__(self, log, worker=None):
+    def __init__(self, log, events, worker=None):
         self.log = log
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
@@ -84,6 +84,7 @@ class MessagingPublisher(Publish):
                                         token=self.shared.topic['key'],
                                         project=self.shared.topic['project'])
         self.name = worker
+        self.events = events
 
     def body2dict(self, body):
         d = dict()
@@ -129,7 +130,7 @@ class MessagingPublisher(Publish):
 
     def write(self, num=0):
         t = 1
-        lck = self.shared.event('lck', self.name)
+        lck = self.events('lck-'+self.name)
         for i in range(self.pubnumloop):
             if self.shared.topic['type'] == 'metric':
                 msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
@@ -161,7 +162,7 @@ class MessagingPublisher(Publish):
                             # add some exponential jitter slowdown here
                             s = 30
                             time.sleep(s)
-                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.worker, t, s))
+                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                             pass
 
                     finally:

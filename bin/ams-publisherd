@@ -25,7 +25,7 @@ shared = None
 def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
-def daemon_start(context_daemon, logger, restart=False):
+def daemon_start(context_daemon, logger, events, restart=False):
     global shared
 
     if context_daemon.pidfile.is_locked() and not \
@@ -39,11 +39,10 @@ def daemon_start(context_daemon, logger, restart=False):
             context_daemon.pidfile.break_lock()
 
     def sigtermhandle(signum, frame):
-        shared.event('term').set()
-        shared.event('termth').set()
+        events['term'].set()
 
     def sigusrhandle(signum, frame):
-        shared.event('usr1').set()
+        events['usr1'].set()
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
@@ -61,7 +60,7 @@ def daemon_start(context_daemon, logger, restart=False):
 
     context_daemon.open()
     with context_daemon:
-        init_dirq_consume(workers=shared.workers, log=logger, daemonized=True)
+        init_dirq_consume(shared.workers, logger, events, daemonized=True)
 
 def daemon_stop(context_daemon, logger, restart=False):
     if context_daemon.pidfile.is_locked():
@@ -105,26 +104,28 @@ def daemon_status(context_daemon, logger):
         logger.info('Not running')
         return 3
 
-def pidfiledir(logger, pidfile, confopts):
+def pidfiledir(logger, pidfile):
+    global shared
+
     try:
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
             os.makedirs(dirp)
-            uid, gid = get_userids(confopts['general']['runasuser'])
+            uid, gid = get_userids(shared.general['runasuser'])
             os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
             logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
             raise SystemExit(1)
 
-def daemonizer(args, logger, confopts):
-    pidfiledir(logger, pidfile, confopts)
+def daemonizer(args, logger, events):
+    pidfiledir(logger, pidfile)
 
     context_daemon = daemon.DaemonContext()
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
 
     if args.daemon == 'start':
-        daemon_start(context_daemon, logger)
+        daemon_start(context_daemon, logger, events)
 
     elif args.daemon == 'stop':
         ret = daemon_stop(context_daemon, logger)
@@ -132,7 +133,7 @@ def daemonizer(args, logger, confopts):
 
     elif args.daemon == 'restart':
         daemon_stop(context_daemon, logger, restart=True)
-        daemon_start(context_daemon, logger, restart=True)
+        daemon_start(context_daemon, logger, events, restart=True)
 
     elif args.daemon == 'status':
         ret = daemon_status(context_daemon, logger)
@@ -141,14 +142,15 @@ def daemonizer(args, logger, confopts):
 def main():
     lobj = Logger(sys.argv[0], logfile)
     logger = lobj.get()
+    events = dict()
+
+    termev = multiprocessing.Event()
+    usr1ev = multiprocessing.Event()
+    events.update({'term': termev, 'usr1': usr1ev})
 
     confopts = parse_config(logger)
     global shared
     shared = Shared(confopts=confopts)
-
-    shared.add_event('term', multiprocessing.Event(), glob=True)
-    shared.add_event('termth', threading.Event(), glob=True)
-    shared.add_event('usr1', multiprocessing.Event(), glob=True)
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)
@@ -160,11 +162,11 @@ def main():
 
     if args.nofork:
         try:
-            init_dirq_consume(workers=shared.workers, log=logger, daemonized=False)
+            init_dirq_consume(shared.workers, logger, events, daemonized=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
     elif args.daemon:
-        daemonizer(args, logger, confopts)
+        daemonizer(args, logger, events)
 
 main()

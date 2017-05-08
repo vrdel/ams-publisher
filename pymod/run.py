@@ -1,14 +1,20 @@
+import decimal
 import avro.schema
+import os
 import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.shared import Shared
+from collections import deque
+from datetime import datetime
 from multiprocessing import Event, Lock
+from threading import Event as ThreadEvent
 
-def init_dirq_consume(workers, log, daemonized):
+def init_dirq_consume(workers, log, globevents, daemonized):
     evsleep = 2
     consumers = list()
+    localevents = dict()
 
     for w in workers:
         shared = Shared(worker=w)
@@ -28,35 +34,37 @@ def init_dirq_consume(workers, log, daemonized):
 
             shared.runtime.update(publisher=MessagingPublisher)
 
-        shared.add_event('lck', Lock())
-        shared.add_event('usr1', Event())
-        shared.add_event('term', Event())
-        shared.add_event('giveup', Event())
+        localevents.update({'lck-'+w: Lock()})
+        localevents.update({'usr1-'+w: Event()})
+        localevents.update({'term-'+w: Event()})
+        localevents.update({'termth-'+w: ThreadEvent()})
+        localevents.update({'giveup-'+w: Event()})
         shared.runtime.update(evsleep=evsleep)
         shared.runtime.update(daemonized=daemonized)
 
-        consumers.append(ConsumerQueue(log, worker=w))
+        consumers.append(ConsumerQueue(log, events=localevents, worker=w))
         if not daemonized:
             consumers[-1].daemon = True
         consumers[-1].start()
 
     while True:
         for c in consumers:
-            if shared.event('giveup', c.name).is_set():
+            if localevents['giveup-'+c.name].is_set():
                 c.terminate()
                 c.join(1)
-                shared.event('giveup', c.name).clear()
+                localevents['giveup-'+c.name].clear()
 
-        if shared.event('term').is_set():
+        if globevents['term'].is_set():
             for c in consumers:
-                shared.event('term', c.name).set()
+                localevents['term-'+c.name].set()
+                localevents['termth-'+c.name].set()
                 c.join(1)
             raise SystemExit(0)
 
-        if shared.event('usr1').is_set():
+        if globevents['usr1'].is_set():
             for c in consumers:
-                shared.event('usr1', c.name).set()
-            shared.event('usr1').clear()
+                localevents['usr1-'+c.name].set()
+            globevents['usr1'].clear()
 
         try:
             time.sleep(evsleep)

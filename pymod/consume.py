@@ -10,11 +10,12 @@ from messaging.queue.dqs import DQS
 from multiprocessing import Process, Event
 
 class ConsumerQueue(Process):
-    def __init__(self, log, worker=None):
+    def __init__(self, log, events, worker=None):
         Process.__init__(self)
         self.log = log
         self.shared = Shared(worker=worker)
         self.name = worker
+        self.events = events
 
         self.nmsgs_consumed = 0
         self.sess_consumed = 0
@@ -27,8 +28,8 @@ class ConsumerQueue(Process):
         self.shared.runtime.update(inmemq=self.inmemq,
                                    pubnumloop=self.pubnumloop, dirq=self.dirq,
                                    filepublisher=False)
-        self.publisher = self.shared.runtime['publisher'](log=log, worker=worker)
-        self.purger = Purger(log=log, worker=worker)
+        self.publisher = self.shared.runtime['publisher'](log, events, worker=worker)
+        self.purger = Purger(log, events, worker=worker)
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
@@ -49,10 +50,10 @@ class ConsumerQueue(Process):
 
     def run(self):
         self.prevstattime = int(datetime.now().strftime('%s'))
-        termev = self.shared.event('term', self.name)
-        usr1ev = self.shared.event('usr1', self.name)
-        lck = self.shared.event('lck', self.name)
-        evgup = self.shared.event('giveup', self.name)
+        termev = self.events['term-'+self.name]
+        usr1ev = self.events['usr1-'+self.name]
+        lck = self.events['lck-'+self.name]
+        evgup = self.events['giveup-'+self.name]
 
         while True:
             try:
