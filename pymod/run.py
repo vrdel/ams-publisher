@@ -11,7 +11,7 @@ from datetime import datetime
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
 
-def init_dirq_consume(workers, log, globevents, daemonized):
+def init_dirq_consume(workers, daemonized):
     evsleep = 2
     consumers = list()
     localevents = dict()
@@ -29,7 +29,7 @@ def init_dirq_consume(workers, log, globevents, daemonized):
                 avsc = open(shared.general['msgavroschema'])
                 shared.runtime.update(schema=avro.schema.parse(avsc.read()))
             except Exception as e:
-                log.error(e)
+                shared.log.error(e)
                 raise SystemExit(1)
 
             shared.runtime.update(publisher=MessagingPublisher)
@@ -42,7 +42,7 @@ def init_dirq_consume(workers, log, globevents, daemonized):
         shared.runtime.update(evsleep=evsleep)
         shared.runtime.update(daemonized=daemonized)
 
-        consumers.append(ConsumerQueue(log, events=localevents, worker=w))
+        consumers.append(ConsumerQueue(events=localevents, worker=w))
         if not daemonized:
             consumers[-1].daemon = True
         consumers[-1].start()
@@ -54,17 +54,17 @@ def init_dirq_consume(workers, log, globevents, daemonized):
                 c.join(1)
                 localevents['giveup-'+c.name].clear()
 
-        if globevents['term'].is_set():
+        if shared.event('term').is_set():
             for c in consumers:
                 localevents['term-'+c.name].set()
                 localevents['termth-'+c.name].set()
                 c.join(1)
             raise SystemExit(0)
 
-        if globevents['usr1'].is_set():
+        if shared.event('usr1').is_set():
             for c in consumers:
                 localevents['usr1-'+c.name].set()
-            globevents['usr1'].clear()
+            shared.event('usr1').clear()
 
         try:
             time.sleep(evsleep)

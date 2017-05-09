@@ -8,25 +8,28 @@ class Shared(object):
 
     def __init__(self, confopts=None, worker=None):
         if confopts:
-            self._queues = confopts['queues']
-            self._topics = confopts['topics']
-            self.general = confopts['general']
-            self.workers = self._queues.keys()
+            if not getattr(self.__class__, '_queues', False):
+                self.__class__._queues = confopts['queues']
+            if not getattr(self.__class__, '_topics', False):
+                self.__class__._topics = confopts['topics']
+            if not getattr(self.__class__, 'general', False):
+                self.__class__.general = confopts['general']
+            self.workers = self.__class__._queues.keys()
         if worker:
             self.worker = worker
-            self.queue = self._queues[worker]
-            self.topic = self._topics[worker]
+            self.queue = self.__class__._queues[worker]
+            self.topic = self.__class__._topics[worker]
 
-    def add_event(self, name, ev, glob=False):
-        if not getattr(self, 'events', False):
-            self.events = dict()
-        if glob:
-            self.events.update({'{0}-{1}'.format('global', name): ev})
-        else:
-            self.events.update({'{0}-{1}'.format(self.worker, name): ev})
+    def add_event(self, name, ev):
+        if not getattr(self.__class__, 'events', False):
+            self.__class__.events = dict()
+        self.__class__.events.update({name: ev})
 
-    def event(self, name, worker=None):
-        if not worker:
-            return self.events.get('{0}-{1}'.format('global', name))
-        else:
-            return self.events.get('{0}-{1}'.format(self.worker, name))
+    def add_log(self, logger):
+        if not getattr(self.__class__, 'log', False):
+            self.__class__.log= None
+        self.__class__.log = logger
+        self.log = self.__class__.log
+
+    def event(self, name):
+        return self.__class__.events.get(name)

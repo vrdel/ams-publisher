@@ -5,10 +5,9 @@ from argo_nagios_ams_publisher.shared import Shared
 from datetime import datetime
 
 class Purger(threading.Thread):
-    def __init__(self, log, events, worker=None):
+    def __init__(self, events, worker=None):
         threading.Thread.__init__(self)
         self.shared = Shared(worker=worker)
-        self.log = log
         self.name = worker
         self.events = events
         self.dirq = self.shared.runtime['dirq']

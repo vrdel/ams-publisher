@@ -15,8 +15,7 @@ from argo_nagios_ams_publisher.shared import Shared
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
 class Publish(object):
-    def __init__(self, log, worker=None):
-        self.log = log
+    def __init__(self, worker=None):
         self.shared = Shared(worker=worker)
         self.nmsgs_published = 0
         self.laststattime = time.time()
@@ -29,11 +28,11 @@ class Publish(object):
 
     def stats(self, reset=False):
         def statmsg(hours):
-            self.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
-                                                                    self.name,
-                                                                    self.nmsgs_published,
-                                                                    hours
-                                                                    ))
+            self.shared.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
+                                                                                   self.name,
+                                                                                   self.nmsgs_published,
+                                                                                   hours
+                                                                                  ))
         if reset:
             statmsg(self.shared.general['statseveryhour'])
             self.nmsgs_published = 0
@@ -46,13 +45,12 @@ class Publish(object):
         pass
 
 class FilePublisher(Publish):
-    def __init__(self, log, worker=None):
-        self.log = log
+    def __init__(self, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
         self.pubnumloop = self.shared.runtime['pubnumloop']
         self.worker = worker
-        super(FilePublisher, self).__init__(log=log, worker=worker)
+        super(FilePublisher, self).__init__(worker=worker)
 
     def write(self, num=0):
         published = set()
@@ -69,17 +67,16 @@ class FilePublisher(Publish):
             return True, published
 
         except Exception as e:
-            self.log.error(e)
+            self.shared.log.error(e)
             return False, published
 
 class MessagingPublisher(Publish):
-    def __init__(self, log, events, worker=None):
-        self.log = log
+    def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
         self.pubnumloop = self.shared.runtime['pubnumloop']
         self.schema = self.shared.runtime['schema']
-        super(MessagingPublisher, self).__init__(log=log, worker=worker)
+        super(MessagingPublisher, self).__init__(worker=worker)
         self.ams = ArgoMessagingService(endpoint=self.shared.topic['host'],
                                         token=self.shared.topic['key'],
                                         project=self.shared.topic['project'])
@@ -130,8 +127,9 @@ class MessagingPublisher(Publish):
 
     def write(self, num=0):
         t = 1
-        lck = self.events('lck-'+self.name)
+        lck = self.events['lck-'+self.name]
         for i in range(self.pubnumloop):
+            msgs = list()
             if self.shared.topic['type'] == 'metric':
                 msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
                 msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
@@ -154,7 +152,7 @@ class MessagingPublisher(Publish):
                         return True, published
 
                     except (AmsServiceException, AmsConnectionException)  as e:
-                        self.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
+                        self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
                         if t == self.shared.general['publishretry']:
                             raise e
@@ -162,7 +160,7 @@ class MessagingPublisher(Publish):
                             # add some exponential jitter slowdown here
                             s = 30
                             time.sleep(s)
-                            self.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
+                            self.shared.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                             pass
 
                     finally:

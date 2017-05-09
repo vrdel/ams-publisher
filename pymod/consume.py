@@ -10,9 +10,8 @@ from messaging.queue.dqs import DQS
 from multiprocessing import Process, Event
 
 class ConsumerQueue(Process):
-    def __init__(self, log, events, worker=None):
+    def __init__(self, events, worker=None):
         Process.__init__(self)
-        self.log = log
         self.shared = Shared(worker=worker)
         self.name = worker
         self.events = events
@@ -28,15 +27,15 @@ class ConsumerQueue(Process):
         self.shared.runtime.update(inmemq=self.inmemq,
                                    pubnumloop=self.pubnumloop, dirq=self.dirq,
                                    filepublisher=False)
-        self.publisher = self.shared.runtime['publisher'](log, events, worker=worker)
-        self.purger = Purger(log, events, worker=worker)
+        self.publisher = self.shared.runtime['publisher'](events, worker=worker)
+        self.purger = Purger(events, worker=worker)
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
 
     def stats(self, reset=False):
         def statmsg(hours):
-            self.log.info('{0} {1}: consumed {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
+            self.shared.log.info('{0} {1}: consumed {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
                                                                         self.name,
                                                                         self.nmsgs_consumed,
                                                                         hours))
@@ -58,7 +57,7 @@ class ConsumerQueue(Process):
         while True:
             try:
                 if termev.is_set():
-                    self.log.warning('Process {0} received SIGTERM'.format(self.name))
+                    self.shared.log.warning('Process {0} received SIGTERM'.format(self.name))
                     lck.acquire(True)
                     self.stats()
                     self.publisher.stats()
@@ -68,7 +67,7 @@ class ConsumerQueue(Process):
                     raise SystemExit(0)
 
                 if usr1ev.is_set():
-                    self.log.info('Process {0} received SIGUSR1'.format(self.name))
+                    self.shared.log.info('Process {0} received SIGUSR1'.format(self.name))
                     lck.acquire(True)
                     self.stats()
                     self.publisher.stats()
@@ -81,7 +80,7 @@ class ConsumerQueue(Process):
                     if ret:
                         self.remove_dirq_msgs()
                     elif published:
-                        self.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
+                        self.shared.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
                         self.stats()
                         self.publisher.stats()
                         self.remove_dirq_msgs(published)
@@ -89,7 +88,7 @@ class ConsumerQueue(Process):
                         evgup.set()
                         raise SystemExit(0)
                     else:
-                        self.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
+                        self.shared.log.error('{0} {1} giving up'.format(self.__class__.__name__, self.name))
                         self.stats()
                         self.publisher.stats()
                         self.unlock_dirq_msgs()
@@ -131,7 +130,7 @@ class ConsumerQueue(Process):
                         return True
 
         except Exception as e:
-            self.log.error(e)
+            self.shared.log.error(e)
 
         return False
 
@@ -142,7 +141,7 @@ class ConsumerQueue(Process):
                 self.dirq.unlock(m[0] if not isinstance(m, str) else m)
             self.inmemq.clear()
         except (OSError, IOError) as e:
-            self.log.error(e)
+            self.shared.log.error(e)
 
     def remove_dirq_msgs(self, msgs=None):
         try:
@@ -151,5 +150,5 @@ class ConsumerQueue(Process):
                 self.dirq.remove(m[0] if not isinstance(m, str) else m)
             self.inmemq.clear()
         except (OSError, IOError) as e:
-            self.log.error(e)
+            self.shared.log.error(e)
 
