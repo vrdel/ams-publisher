@@ -16,7 +16,6 @@ from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceExc
 
 class Publish(object):
     def __init__(self, worker=None):
-        self.shared = Shared(worker=worker)
         self.nmsgs_published = 0
         self.laststattime = time.time()
         self.name = worker
@@ -45,7 +44,7 @@ class Publish(object):
         pass
 
 class FilePublisher(Publish):
-    def __init__(self, worker=None):
+    def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
         self.pubnumloop = self.shared.runtime['pubnumloop']
@@ -56,13 +55,13 @@ class FilePublisher(Publish):
         published = set()
         try:
             for i in range(self.pubnumloop):
-                with open('/{0}/{1}'.format(self.publishmsgfiledir, self.topic), 'a') as fp:
+                with open('/{0}/{1}'.format(self.shared.general['publishmsgfiledir'], self.shared.topic['topic']), 'a') as fp:
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
-                                   for e in range(self.bulk)])
-                published.update([self.inmemq[e][0] for e in range(self.bulk)])
-                self.nmsgs_published += self.bulk
+                                   for e in range(self.shared.topic['bulk'])])
+                published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
+                self.nmsgs_published += self.shared.topic['bulk']
 
-                self.inmemq.rotate(-self.bulk)
+                self.inmemq.rotate(-self.shared.topic['bulk'])
 
             return True, published
 
