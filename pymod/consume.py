@@ -10,6 +10,13 @@ from messaging.queue.dqs import DQS
 from multiprocessing import Process, Event
 
 class ConsumerQueue(Process):
+    """
+       Class represents spawned worker process that will periodically check and
+       consume local cache/directory queue. It will initialize associated
+       Publisher that will be used to dispatch consumed messages and will also
+       spawn a Purger thread that will clean the local cache and keep it with
+       the sound data.
+    """
     def __init__(self, events, worker=None):
         Process.__init__(self)
         self.shared = Shared(worker=worker)

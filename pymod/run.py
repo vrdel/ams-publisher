@@ -12,6 +12,14 @@ from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
 
 def init_dirq_consume(workers, daemonized):
+    """
+       Initialize local cache/directory queue consumers. For each Queue defined
+       in configuration, one worker process will be spawned and Publisher will
+       be associated. Register also local SIGTERM and SIGUSR events that will
+       be triggered upon receiving same signals from daemon control process and
+       that will be used to control the behaviour of spawned subprocesses and
+       threads.
+    """
     evsleep = 2
     consumers = list()
     localevents = dict()

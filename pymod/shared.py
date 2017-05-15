@@ -1,4 +1,8 @@
 class Shared(object):
+    """
+       Singleton object used to store configuration options and some runtime
+       options that need to be shared throughout the code
+    """
     def __new__(cls, *args, **kwargs):
         if getattr(cls, 'sharedobj', False):
             return cls.sharedobj

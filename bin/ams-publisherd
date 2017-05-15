@@ -114,6 +114,11 @@ def pidfiledir(pidfile):
             raise SystemExit(1)
 
 def daemonizer(args):
+    """
+       Create DaemonContext for setting the behaviour and the options for
+       process once it becomes the daemon.
+
+    """
     pidfiledir(pidfile)
 
     context_daemon = daemon.DaemonContext()
@@ -135,6 +140,13 @@ def daemonizer(args):
         raise SystemExit(ret)
 
 def main():
+    """
+       Function fetch arguments from command line, initialize logger,
+       initialize singleton object that will hold configuration options,
+       register SIGTERM and SIGUSR handlers and starts daemonizing the process.
+       There is also option for no-daemonizing mainly for debugging purposes.
+
+    """
     lobj = Logger(sys.argv[0], logfile)
     logger = lobj.get()
 

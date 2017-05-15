@@ -5,6 +5,11 @@ from argo_nagios_ams_publisher.shared import Shared
 from datetime import datetime
 
 class Purger(threading.Thread):
+    """
+       Local cache/directory queue Purger running as separate thread that will
+       clean empty intermediate directories, locked and temporary message files
+       that exceeded specified threshold.
+    """
     def __init__(self, events, worker=None):
         threading.Thread.__init__(self)
         self.shared = Shared(worker=worker)

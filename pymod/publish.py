@@ -15,6 +15,9 @@ from argo_nagios_ams_publisher.shared import Shared
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
 class Publish(object):
+    """
+       Base publisher class that initialize statistic data
+    """
     def __init__(self, worker=None):
         self.nmsgs_published = 0
         self.laststattime = time.time()
@@ -44,6 +47,10 @@ class Publish(object):
         pass
 
 class FilePublisher(Publish):
+    """
+       Publisher that write the messages into a file. Used only for debugging
+       purposes.
+    """
     def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
@@ -70,6 +77,10 @@ class FilePublisher(Publish):
             return False, published
 
 class MessagingPublisher(Publish):
+    """
+       Publisher that dispatches consumed messages to AMS services
+       TODO: split into two types of AMS publisher: alarms, metric results
+    """
     def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
