@@ -3,6 +3,7 @@
 from argo_nagios_ams_publisher.config import parse_config
 from argo_nagios_ams_publisher.log import Logger
 from argo_nagios_ams_publisher.run import init_dirq_consume
+from argo_nagios_ams_publisher.shared import Shared
 
 import argparse
 import daemon
@@ -14,51 +15,51 @@ import psutil
 import pwd
 import signal
 import sys
-import threading
 
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
+shared = None
+
 def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
-def daemon_start(context_daemon, logger, events, confopts, restart=False):
+def daemon_start(context_daemon, restart=False):
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
         try:
             psutil.Process(pid=pid)
-            logger.info('Already running (%s)' % pid)
+            shared.log.info('Already running (%s)' % pid)
             return 0
         except psutil.NoSuchProcess:
             context_daemon.pidfile.break_lock()
 
     def sigtermhandle(signum, frame):
-        events['term'].set()
-        events['termth'].set()
+        shared.event('term').set()
 
     def sigusrhandle(signum, frame):
-        events['usr1'].set()
+        shared.event('usr1').set()
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
         signal.SIGUSR1: sigusrhandle
     }
 
-    uid, gid = get_userids(confopts['general']['runasuser'])
+    uid, gid = get_userids(shared.general['runasuser'])
     context_daemon.uid = uid
     context_daemon.gid = gid
-    os.chown(logger.fileloghandle.name, uid, gid)
-    context_daemon.files_preserve = [logger.fileloghandle]
+    os.chown(shared.log.fileloghandle.name, uid, gid)
+    context_daemon.files_preserve = [shared.log.fileloghandle]
 
     if not restart:
-        logger.info('Started')
+        shared.log.info('Started')
 
     context_daemon.open()
     with context_daemon:
-        init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=True)
+        init_dirq_consume(shared.workers, daemonized=True)
 
-def daemon_stop(context_daemon, logger, restart=False):
+def daemon_stop(context_daemon, restart=False):
     if context_daemon.pidfile.is_locked():
         pid = context_daemon.pidfile.read_pid()
 
@@ -67,23 +68,23 @@ def daemon_stop(context_daemon, logger, restart=False):
         except psutil.NoSuchProcess:
             context_daemon.pidfile.break_lock()
             if not restart:
-                logger.info('Not running - cleaning stale pidfile')
+                shared.log.info('Not running - cleaning stale pidfile')
         else:
             process.terminate()
             pgone, palive = psutil.wait_procs([process])
 
             if not restart:
-                logger.info('Stopping (%s)' % pid)
+                shared.log.info('Stopping (%s)' % pid)
 
             for p in palive:
                 p.kill()
 
     elif not restart:
-        logger.info('Not running')
+        shared.log.info('Not running')
 
     return 0
 
-def daemon_status(context_daemon, logger):
+def daemon_status(context_daemon):
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
@@ -91,59 +92,71 @@ def daemon_status(context_daemon, logger):
         try:
             psutil.Process(pid=pid)
         except psutil.NoSuchProcess:
-            logger.info('Not running - stale pidfile')
+            shared.log.info('Not running - stale pidfile')
             return 1
         else:
-            logger.info('Running (%s)' % pid)
+            shared.log.info('Running (%s)' % pid)
             return 0
     else:
-        logger.info('Not running')
+        shared.log.info('Not running')
         return 3
 
-def pidfiledir(logger, pidfile, confopts):
+def pidfiledir(pidfile):
     try:
         if not os.path.exists(os.path.dirname(pidfile)):
             dirp = os.path.dirname(pidfile)
             os.makedirs(dirp)
-            uid, gid = get_userids(confopts['general']['runasuser'])
+            uid, gid = get_userids(shared.general['runasuser'])
             os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
-            logger.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
+            shared.log.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
             raise SystemExit(1)
 
-def daemonizer(args, logger, events, confopts):
-    pidfiledir(logger, pidfile, confopts)
+def daemonizer(args):
+    """
+       Create DaemonContext for setting the behaviour and the options for
+       process once it becomes the daemon.
+
+    """
+    pidfiledir(pidfile)
 
     context_daemon = daemon.DaemonContext()
     context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
 
     if args.daemon == 'start':
-        daemon_start(context_daemon, logger, events, confopts)
+        daemon_start(context_daemon)
 
     elif args.daemon == 'stop':
-        ret = daemon_stop(context_daemon, logger)
+        ret = daemon_stop(context_daemon)
         raise SystemExit(ret)
 
     elif args.daemon == 'restart':
-        daemon_stop(context_daemon, logger, restart=True)
-        daemon_start(context_daemon, logger, events, confopts, restart=True)
+        daemon_stop(context_daemon, restart=True)
+        daemon_start(context_daemon, restart=True)
 
     elif args.daemon == 'status':
-        ret = daemon_status(context_daemon, logger)
+        ret = daemon_status(context_daemon)
         raise SystemExit(ret)
 
 def main():
+    """
+       Function fetch arguments from command line, initialize logger,
+       initialize singleton object that will hold configuration options,
+       register SIGTERM and SIGUSR handlers and starts daemonizing the process.
+       There is also option for no-daemonizing mainly for debugging purposes.
+
+    """
     lobj = Logger(sys.argv[0], logfile)
     logger = lobj.get()
-    events = dict()
-
-    termev = multiprocessing.Event()
-    usr1ev = multiprocessing.Event()
-    termevth = threading.Event()
-    events.update({'term': termev, 'termth': termevth, 'usr1': usr1ev})
 
     confopts = parse_config(logger)
+    global shared
+    shared = Shared(confopts=confopts)
+
+    shared.add_log(logger)
+    shared.add_event('term', multiprocessing.Event())
+    shared.add_event('usr1', multiprocessing.Event())
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)
@@ -155,11 +168,11 @@ def main():
 
     if args.nofork:
         try:
-            init_dirq_consume(conf=confopts, log=logger, ev=events, daemonized=False)
+            init_dirq_consume(shared.workers, daemonized=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
     elif args.daemon:
-        daemonizer(args, logger, events, confopts)
+        daemonizer(args)
 
 main()

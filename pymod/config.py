@@ -9,6 +9,10 @@ def get_queue_granul(queue):
             return confopts['queues'][k]['granularity']
 
 def parse_config(logger=None):
+    """
+       Parse configuration file consisting of one General section and variable
+       number of (Queue_<worker>, Topic_<worker>) section pairs
+    """
     reqsections = set(['queue_', 'topic_', 'general'])
     confopts = dict()
 
@@ -19,9 +23,9 @@ def parse_config(logger=None):
 
             if len(pairedsects) % 2:
                 if logger:
-                    logger.error('Unpaired DirQ and Topic sections')
+                    logger.error('Unpaired Queue and Topic sections')
                 else:
-                    sys.stderr.write('Unpaired DirQ and Topic sections\n')
+                    sys.stderr.write('Unpaired Queue and Topic sections\n')
                 raise SystemExit(1)
 
             commonsects = [s.lower() for s in config.sections() if '_' not in s]

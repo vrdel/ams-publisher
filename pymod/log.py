@@ -7,6 +7,9 @@ logname = 'ams-publisher'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
 class Logger(object):
+    """
+       Logger objects with initialized File and Syslog logger.
+    """
     logger = None
 
     def _init_stdout(self):
