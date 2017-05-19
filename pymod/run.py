@@ -3,11 +3,9 @@ import avro.schema
 import os
 import time
 
-from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
+from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.shared import Shared
-from collections import deque
-from datetime import datetime
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
 
@@ -40,7 +38,10 @@ def init_dirq_consume(workers, daemonized):
                 shared.log.error(e)
                 raise SystemExit(1)
 
-            shared.runtime.update(publisher=MessagingPublisher)
+            if shared.topic['type'] == 'metric':
+                shared.runtime.update(publisher=MessagingPublisherMetrics)
+            elif shared.topic['type'] == 'alarm':
+                shared.runtime.update(publisher=MessagingPublisherAlarms)
 
         localevents.update({'lck-'+w: Lock()})
         localevents.update({'usr1-'+w: Event()})

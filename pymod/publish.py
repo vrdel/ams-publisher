@@ -1,12 +1,8 @@
-import avro.schema
 import time
 import json
 
 from avro.io import BinaryEncoder
-from avro.io import DatumReader
 from avro.io import DatumWriter
-from base64 import b64encode
-from collections import deque
 from io import BytesIO
 
 from argo_ams_library.ams import ArgoMessagingService
@@ -78,14 +74,13 @@ class FilePublisher(Publish):
 
 class MessagingPublisher(Publish):
     """
-       Publisher that dispatches consumed messages to AMS services
-       TODO: split into two types of AMS publisher: alarms, metric results
+       Base MessagingPublisher class that dispatch messages formed in
+       subclasses to ARGO Messaging service.
     """
     def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
         self.pubnumloop = self.shared.runtime['pubnumloop']
-        self.schema = self.shared.runtime['schema']
         super(MessagingPublisher, self).__init__(worker=worker)
         self.ams = ArgoMessagingService(endpoint=self.shared.topic['host'],
                                         token=self.shared.topic['key'],
@@ -105,50 +100,10 @@ class MessagingPublisher(Publish):
 
         return d
 
-    def construct_metricmsg(self, msg):
-        def _part_date(timestamp):
-            import datetime
-
-            date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-            part_date_fmt = '%Y-%m-%d'
-            d = datetime.datetime.strptime(timestamp, date_fmt)
-
-            return d.strftime(part_date_fmt)
-
-        def _avro_serialize(msg):
-            avro_writer = DatumWriter(self.schema)
-            bytesio = BytesIO()
-            encoder = BinaryEncoder(bytesio)
-            avro_writer.write(msg, encoder)
-
-            return bytesio.getvalue()
-
-        plainmsg = dict()
-        plainmsg.update(msg.header)
-        plainmsg.update(self.body2dict(msg.body))
-
-        return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
-
-    def construct_alarmsg(self, msg):
-        d = self.body2dict(msg.body)
-        d.update(msg.header)
-
-        return json.dumps(d)
-
-    def write(self, num=0):
+    def _write(self, msgs):
         t = 1
         lck = self.events['lck-'+self.name]
         for i in range(self.pubnumloop):
-            msgs = list()
-            if self.shared.topic['type'] == 'metric':
-                msgs = [self.construct_metricmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-                msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
-                                                            'type': 'metric_data'},
-                                                data=m[1]).dict(), msgs)
-            elif self.shared.topic['type'] == 'alarm':
-                msgs = [self.construct_alarmsg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-                msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
-                                                data=m).dict(), msgs)
             try:
                 while t <= self.shared.general['publishretry']:
                     try:
@@ -180,3 +135,63 @@ class MessagingPublisher(Publish):
 
             except (AmsServiceException, AmsConnectionException) as e:
                 return False, published
+
+class MessagingPublisherMetrics(MessagingPublisher):
+    """
+       MessagingPublisher type of class that forms the metric results messages,
+       avro serialize them and send them to ARGO Messaging service
+    """
+    def __init__(self, events, worker=None):
+        super(MessagingPublisherMetrics, self).__init__(events, worker)
+        self.schema = self.shared.runtime['schema']
+
+    def construct_msg(self, msg):
+        def _part_date(timestamp):
+            import datetime
+
+            date_fmt = '%Y-%m-%dT%H:%M:%SZ'
+            part_date_fmt = '%Y-%m-%d'
+            d = datetime.datetime.strptime(timestamp, date_fmt)
+
+            return d.strftime(part_date_fmt)
+
+        def _avro_serialize(msg):
+            avro_writer = DatumWriter(self.schema)
+            bytesio = BytesIO()
+            encoder = BinaryEncoder(bytesio)
+            avro_writer.write(msg, encoder)
+
+            return bytesio.getvalue()
+
+        plainmsg = dict()
+        plainmsg.update(msg.header)
+        plainmsg.update(self.body2dict(msg.body))
+
+        return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
+
+    def write(self, num=0):
+        msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
+        msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
+                                                    'type': 'metric_data'},
+                                        data=m[1]), msgs)
+        return self._write(msgs)
+
+class MessagingPublisherAlarms(MessagingPublisher):
+    """
+       MessagingPublisher type of class that forms the messages for
+       alarms/notifications and send them to ARGO Messaging service
+    """
+    def __init__(self, events, worker=None):
+        super(MessagingPublisherAlarms, self).__init__(events, worker)
+
+    def construct_msg(self, msg):
+        d = self.body2dict(msg.body)
+        d.update(msg.header)
+
+        return json.dumps(d)
+
+    def write(self, num=0):
+        msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
+        msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
+                                        data=m), msgs)
+        return self._write(msgs)
