@@ -114,8 +114,6 @@ class MessagingPublisher(Publish):
                         self.nmsgs_published += self.shared.topic['bulk']
                         self.inmemq.rotate(-self.shared.topic['bulk'])
 
-                        return True, published
-
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
@@ -135,6 +133,8 @@ class MessagingPublisher(Publish):
 
             except (AmsServiceException, AmsConnectionException) as e:
                 return False, published
+
+        return True, published
 
 class MessagingPublisherMetrics(MessagingPublisher):
     """
