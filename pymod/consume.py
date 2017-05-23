@@ -83,7 +83,7 @@ class ConsumerQueue(Process):
 
                 if self.consume_dirq_msgs(max(self.shared.topic['bulk'],
                                               self.shared.queue['rate'])):
-                    ret, published = self.publisher.write(self.shared.topic['bulk'])
+                    ret, published = self.publisher.write()
                     if ret:
                         self.remove_dirq_msgs()
                     elif published:

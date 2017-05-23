@@ -111,7 +111,7 @@ class MessagingPublisher(Publish):
                         published = set()
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.general['publishtimeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-                        self.nmsgs_published +=  self.shared.topic['bulk']
+                        self.nmsgs_published += self.shared.topic['bulk']
                         self.inmemq.rotate(-self.shared.topic['bulk'])
 
                         return True, published
@@ -169,7 +169,7 @@ class MessagingPublisherMetrics(MessagingPublisher):
 
         return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
 
-    def write(self, num=0):
+    def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
         msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                     'type': 'metric_data'},
@@ -190,7 +190,7 @@ class MessagingPublisherAlarms(MessagingPublisher):
 
         return json.dumps(d)
 
-    def write(self, num=0):
+    def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
         msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
                                         data=m), msgs)
