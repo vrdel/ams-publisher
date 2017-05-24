@@ -103,18 +103,17 @@ class MessagingPublisher(Publish):
     def _write(self, msgs):
         t = 1
         lck = self.events['lck-'+self.name]
+        published = set()
         for i in range(self.pubnumloop):
             try:
                 while t <= self.shared.general['publishretry']:
                     try:
                         lck.acquire(False)
-                        published = set()
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.general['publishtimeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self.nmsgs_published += self.shared.topic['bulk']
                         self.inmemq.rotate(-self.shared.topic['bulk'])
-
-                        return True, published
+                        break
 
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
@@ -135,6 +134,8 @@ class MessagingPublisher(Publish):
 
             except (AmsServiceException, AmsConnectionException) as e:
                 return False, published
+
+        return True, published
 
 class MessagingPublisherMetrics(MessagingPublisher):
     """
