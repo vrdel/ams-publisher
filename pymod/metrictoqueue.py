@@ -49,6 +49,7 @@ def main():
     nagioshost = confopts['general']['host']
     timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
+    parser.add_argument('--servicestatetype', required=True, type=str)
     parser.add_argument('--queue', required=True, type=str)
 
     # msg headers
@@ -68,25 +69,26 @@ def main():
 
     seteuser(pwd.getpwnam(confopts['general']['runasuser']))
 
-    try:
-        granularity = config.get_queue_granul(args.queue)
-        mq = DQS(path=args.queue, granularity=granularity)
+    if 'HARD' in args.servicestatetype:
+        try:
+            granularity = config.get_queue_granul(args.queue)
+            mq = DQS(path=args.queue, granularity=granularity)
 
-        if ',' in args.service:
-            services = args.service.split(',')
-            services = [s.strip() for s in services]
-            for service in services:
-                msg = build_msg(args, timestamp, service, args.hostname, \
+            if ',' in args.service:
+                services = args.service.split(',')
+                services = [s.strip() for s in services]
+                for service in services:
+                    msg = build_msg(args, timestamp, service, args.hostname, \
+                                    args.metric, args.status, nagioshost)
+                    mq.add_message(msg)
+            else:
+                msg = build_msg(args, timestamp, args.service, args.hostname, \
                                 args.metric, args.status, nagioshost)
                 mq.add_message(msg)
-        else:
-            msg = build_msg(args, timestamp, args.service, args.hostname, \
-                            args.metric, args.status, nagioshost)
-            mq.add_message(msg)
 
-    except MessageError as e:
-        logger.error('Error constructing metric - %s', repr(e))
+        except MessageError as e:
+            logger.error('Error constructing metric - %s', repr(e))
 
-    except (OSError, IOError) as e:
-        logger.error(e)
-        raise SystemExit(1)
+        except (OSError, IOError) as e:
+            logger.error(e)
+            raise SystemExit(1)
