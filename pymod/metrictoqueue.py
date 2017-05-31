@@ -92,5 +92,3 @@ def main():
         except (OSError, IOError) as e:
             logger.error(e)
             raise SystemExit(1)
-    else:
-        logger.info('Ignoring SOFT type service state: %s %s %s' % (args.hostname, args.service, args.metric))
