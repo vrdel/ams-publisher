@@ -48,7 +48,6 @@ def main():
     nagioshost = confopts['general']['host']
     timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    parser.add_argument('--servicestatetype', required=True, type=str)
     parser.add_argument('--queue', required=True, type=str)
 
     # msg headers
@@ -69,18 +68,17 @@ def main():
 
     seteuser(pwd.getpwnam(confopts['general']['runasuser']))
 
-    if 'HARD' in args.servicestatetype:
-        try:
-            granularity = config.get_queue_granul(args.queue)
-            mq = DQS(path=args.queue, granularity=granularity)
+    try:
+        granularity = config.get_queue_granul(args.queue)
+        mq = DQS(path=args.queue, granularity=granularity)
 
-            msg = build_msg(args, timestamp, args.service, args.hostname, \
-                            args.testname, args.status, nagioshost)
-            mq.add_message(msg)
+        msg = build_msg(args, timestamp, args.service, args.hostname, \
+                        args.testname, args.status, nagioshost)
+        mq.add_message(msg)
 
-        except MessageError as e:
-            logger.error('Error constructing alarm - %s', repr(e))
+    except MessageError as e:
+        logger.error('Error constructing alarm - %s', repr(e))
 
-        except (OSError, IOError) as e:
-            logger.error(e)
-            raise SystemExit(1)
+    except (OSError, IOError) as e:
+        logger.error(e)
+        raise SystemExit(1)
