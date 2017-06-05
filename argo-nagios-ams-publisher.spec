@@ -90,6 +90,7 @@ fi
 - ARGO-797 argo-nagios-ams-publisher overwrites configuration
 - ARGO-802 Singleton config object with shared config options
 - ARGO-803 Refactor publisher class
+- ARGO-815 Sent number of messages reported incorrectly
 - ARGO-826 Pick up only HARD states
 * Thu Apr 27 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.3-1%{?dist}
 - ARGO-788 Skip empty files/messages 
