@@ -3,7 +3,7 @@
 %define underscore() %(echo %1 | sed 's/-/_/g')
 
 Name:           argo-nagios-ams-publisher
-Version:        0.1.4
+Version:        0.2.0
 Release:        1%{?dist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -86,7 +86,7 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
-* Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.1.4-1%{?dist}
+* Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.0-1%{?dist}
 - ARGO-797 argo-nagios-ams-publisher overwrites configuration
 - ARGO-802 Singleton config object with shared config options
 - ARGO-803 Refactor publisher class
