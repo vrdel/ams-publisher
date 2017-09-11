@@ -18,6 +18,8 @@ class Shared(object):
                 self.__class__._topics = confopts['topics']
             if not getattr(self.__class__, 'general', False):
                 self.__class__.general = confopts['general']
+            if not getattr(self.__class__, 'connection', False):
+                self.__class__.connection = confopts['connection']
             self.workers = self.__class__._queues.keys()
         if worker:
             self.worker = worker
