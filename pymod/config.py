@@ -43,8 +43,10 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
                     confopts['general'].update({'msgavroschema': config.get(section, 'MsgAvroSchema')})
-                    confopts['general'].update({'publishretry': int(config.get(section, 'PublishRetry'))})
-                    confopts['general'].update({'publishtimeout': int(config.get(section, 'PublishTimeout'))})
+                if section.startswith('Connection'):
+                    confopts['connection'] = ({'retry': int(config.get(section, 'Retry'))})
+                    confopts['connection'].update({'timeout': int(config.get(section, 'Timeout'))})
+                    confopts['connection'].update({'sleepretry': int(config.get(section, 'SleepRetry'))})
                 if section.startswith('Queue_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()

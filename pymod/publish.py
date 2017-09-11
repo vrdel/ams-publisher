@@ -106,10 +106,10 @@ class MessagingPublisher(Publish):
         published = set()
         for i in range(self.pubnumloop):
             try:
-                while t <= self.shared.general['publishretry']:
+                while t <= self.shared.connection['retry']:
                     try:
                         lck.acquire(False)
-                        self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.general['publishtimeout'])
+                        self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.connection['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self.nmsgs_published += self.shared.topic['bulk']
                         self.inmemq.rotate(-self.shared.topic['bulk'])
@@ -118,14 +118,23 @@ class MessagingPublisher(Publish):
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
-                        if t == self.shared.general['publishretry']:
+                        if t == self.shared.connection['retry']:
                             raise e
                         else:
-                            # add some exponential jitter slowdown here
-                            s = 30
-                            time.sleep(s)
-                            self.shared.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
-                            pass
+                            s = self.shared.connection['sleepretry']
+                            n = s/self.shared.runtime['evsleep']
+                            i = 0
+                            while i < n:
+                                if self.events['term-'+self.name].is_set():
+                                    self.shared.log.warning('Process {0} received SIGTERM'.format(self.name))
+                                    raise e
+                                if self.events['usr1-'+self.name].is_set():
+                                    self.stats()
+                                time.sleep(self.shared.runtime['evsleep'])
+                                i += self.shared.runtime['evsleep']
+                            else:
+                                self.shared.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
+                                pass
 
                     finally:
                         lck.release()
