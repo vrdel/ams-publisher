@@ -131,7 +131,7 @@ class MessagingPublisher(Publish):
                                 if self.events['usr1-'+self.name].is_set():
                                     self.stats()
                                 time.sleep(self.shared.runtime['evsleep'])
-                                i += self.shared.runtime['evsleep']
+                                i += 1
                             else:
                                 self.shared.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                                 pass
