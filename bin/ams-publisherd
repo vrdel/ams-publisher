@@ -7,7 +7,6 @@ from argo_nagios_ams_publisher.shared import Shared
 
 import argparse
 import daemon
-import daemon.pidlockfile
 import errno
 import multiprocessing
 import os
@@ -15,6 +14,15 @@ import psutil
 import pwd
 import signal
 import sys
+
+"""
+    try first to import el6 modulefile, if that fails try to import el7
+    modulefile
+"""
+try:
+    import daemon.pidlockfile as pidlockfile
+except ImportError:
+    import daemon.pidfile as pidlockfile
 
 pidfile = '/var/run/argo-nagios-ams-publisher/pid'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
@@ -127,7 +135,7 @@ def daemonizer(args):
     pidfiledir(pidfile)
 
     context_daemon = daemon.DaemonContext()
-    context_daemon.pidfile = daemon.pidlockfile.PIDLockFile(pidfile, threaded=False)
+    context_daemon.pidfile = pidlockfile.PIDLockFile(pidfile, threaded=False)
 
     if args.daemon == 'start':
         daemon_start(context_daemon)
