@@ -180,6 +180,8 @@ def main():
 
     if args.nofork:
         try:
+            confopts = parse_config()
+            shared = Shared(confopts=confopts)
             init_dirq_consume(shared.workers, daemonized=False)
         except KeyboardInterrupt:
             raise SystemExit(1)
