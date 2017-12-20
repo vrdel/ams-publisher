@@ -1,10 +1,17 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 %define underscore() %(echo %1 | sed 's/-/_/g')
+%define stripc() %(echo %1 | sed 's/el7.centos/el7/')
+
+%if 0%{?el7:1}
+%define mydist %{stripc %{dist}}
+%else
+%define mydist %{dist}
+%endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.2.0
-Release:        1%{?dist}
+Version:        0.2.1
+Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
@@ -14,14 +21,19 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch 
-BuildRequires:  python2-devel
-Requires:       python-psutil >= 4.3
+BuildRequires:  python-devel
 Requires:       python-daemon
 Requires:       python-argparse
 Requires:       python-messaging
 Requires:       python-dirq
 Requires:       avro
 Requires:       argo-ams-library
+
+%if 0%{?el7:1}
+Requires:       python2-psutil >= 4.3
+%else
+Requires:       python-psutil >= 4.3
+%endif
 
 %description
 Bridge from Nagios to the ARGO Messaging system 
@@ -86,6 +98,8 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Wed Dec 20 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.1-1%{?dist}
+- Centos 7 code fixes and spec update
 * Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.0-1%{?dist}
 - ARGO-797 argo-nagios-ams-publisher overwrites configuration
 - ARGO-802 Singleton config object with shared config options
