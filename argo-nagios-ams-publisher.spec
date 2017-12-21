@@ -100,6 +100,8 @@ fi
 %changelog
 * Wed Dec 20 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.1-1%{?dist}
 - Centos 7 code fixes and spec update
+- ARGO-930 Service stop should not depend on successful config parse
+- ARGO-700 Delay each msg publish try in case of connection problems
 * Mon Jun 5 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.0-1%{?dist}
 - ARGO-797 argo-nagios-ams-publisher overwrites configuration
 - ARGO-802 Singleton config object with shared config options
