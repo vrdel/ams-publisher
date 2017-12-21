@@ -43,13 +43,12 @@ class Logger(object):
 
     def __init__(self, caller, logfile):
         self._caller = os.path.basename(caller)
+        self._init_stdout()
         try:
-            self._init_stdout()
             self._init_filelog(logfile)
             self._init_syslog()
         except (OSError, IOError) as e:
-            sys.stderr.write('ERROR ' + self._caller + ' - ' + str(e) + '\n')
-            raise SystemExit(1)
+            sys.stderr.write('WARNING ' + self._caller + ' Error initializing loggers - ' + str(e) + '\n')
 
     def get(self):
         return self.logger
