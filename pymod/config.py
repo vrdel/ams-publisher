@@ -1,5 +1,6 @@
 import ConfigParser
 import sys
+from pytz import timezone, UnknownTimeZoneError
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 
@@ -45,6 +46,15 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
                     confopts['general'].update({'msgavroschema': config.get(section, 'MsgAvroSchema')})
                     confopts['general'].update({'timezone': config.get(section, 'TimeZone')})
+                    try:
+                        tz = timezone(confopts['general']['timezone'])
+                    except UnknownTimeZoneError as e:
+                        if logger:
+                            logger.error('Unknown timezone defined: {0}\n'.format(str(e)))
+                            raise SystemExit(1)
+                        else:
+                            sys.stderr.write('Unknown timezone defined: {0}\n'.format(str(e)))
+                            raise SystemExit(1)
                 if section.startswith('Connection'):
                     confopts['connection'] = ({'retry': int(config.get(section, 'Retry'))})
                     confopts['connection'].update({'timeout': int(config.get(section, 'Timeout'))})
