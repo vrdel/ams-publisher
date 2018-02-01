@@ -8,10 +8,11 @@ from argo_nagios_ams_publisher import config
 from argo_nagios_ams_publisher import log
 
 import argparse
+import datetime
 import os
 import pwd
+import pytz
 import sys
-import datetime
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
@@ -46,7 +47,8 @@ def main():
     logger = lobj.get()
     confopts = config.parse_config(logger)
     nagioshost = confopts['general']['host']
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+    tz = pytz.timezone(confopts['general']['timezone'])
+    timestamp = datetime.datetime.now(tz).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     parser.add_argument('--queue', required=True, type=str)
 

@@ -22,12 +22,13 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch 
 BuildRequires:  python-devel
-Requires:       python-daemon
-Requires:       python-argparse
-Requires:       python-messaging
-Requires:       python-dirq
-Requires:       avro
 Requires:       argo-ams-library
+Requires:       avro
+Requires:       python-argparse
+Requires:       python-daemon
+Requires:       python-dirq
+Requires:       python-messaging
+Requires:       pytz
 
 %if 0%{?el7:1}
 Requires:       python2-psutil >= 4.3
