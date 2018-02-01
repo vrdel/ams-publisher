@@ -69,7 +69,7 @@ def main():
     parser.add_argument('--noout', required=False, action='store_true', default=False)
     parser.add_argument('--sleep', required=False, default=0, type=float)
     parser.add_argument('--bodysize', required=False, default=40, type=int)
-    parser.add_argument('--timezone', required=False, default='Europe/Zagreb', type=str)
+    parser.add_argument('--timezone', required=False, default='UTC', type=str)
     args = parser.parse_args()
 
     seteuser(pwd.getpwnam(args.runas))
