@@ -1,5 +1,6 @@
-import decimal
 import avro.schema
+import datetime
+import decimal
 import os
 import time
 
@@ -26,6 +27,7 @@ def init_dirq_consume(workers, daemonized):
         shared = Shared(worker=w)
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
+            shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if shared.general['publishmsgfile']:
             shared.runtime.update(publisher=FilePublisher)
@@ -71,6 +73,7 @@ def init_dirq_consume(workers, daemonized):
             raise SystemExit(0)
 
         if shared.event('usr1').is_set():
+            shared.log.info('Started %s' % shared.runtime['started'])
             for c in consumers:
                 localevents['usr1-'+c.name].set()
             shared.event('usr1').clear()

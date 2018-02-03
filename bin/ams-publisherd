@@ -5,6 +5,8 @@ from argo_nagios_ams_publisher.log import Logger
 from argo_nagios_ams_publisher.run import init_dirq_consume
 from argo_nagios_ams_publisher.shared import Shared
 
+from datetime import datetime
+
 import argparse
 import daemon
 import errno

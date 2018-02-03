@@ -4,6 +4,7 @@ import time
 
 from argo_nagios_ams_publisher.purge import Purger
 from argo_nagios_ams_publisher.shared import Shared
+
 from collections import deque
 from datetime import datetime
 from messaging.queue.dqs import DQS
