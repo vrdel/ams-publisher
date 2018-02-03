@@ -103,7 +103,8 @@ def daemon_status(context_daemon):
         pid = context_daemon.pidfile.read_pid()
 
         try:
-            psutil.Process(pid=pid)
+            p = psutil.Process(pid=pid)
+            p.send_signal(signal.SIGUSR1)
         except psutil.NoSuchProcess:
             shared.log.info('Not running - stale pidfile')
             return 1
