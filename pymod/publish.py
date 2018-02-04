@@ -126,7 +126,7 @@ class MessagingPublisher(Publish):
                             i = 0
                             while i < n:
                                 if self.events['term-'+self.name].is_set():
-                                    self.shared.log.warning('Process {0} received SIGTERM'.format(self.name))
+                                    self.shared.log.info('Process {0} received SIGTERM'.format(self.name))
                                     raise e
                                 if self.events['usr1-'+self.name].is_set():
                                     self.stats()

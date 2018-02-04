@@ -65,7 +65,7 @@ class ConsumerQueue(Process):
         while True:
             try:
                 if termev.is_set():
-                    self.shared.log.warning('Process {0} received SIGTERM'.format(self.name))
+                    self.shared.log.info('Process {0} received SIGTERM'.format(self.name))
                     lck.acquire(True)
                     self.stats()
                     self.publisher.stats()
