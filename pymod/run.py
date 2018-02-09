@@ -6,6 +6,7 @@ import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
 from argo_nagios_ams_publisher.consume import ConsumerQueue
+from argo_nagios_ams_publisher.stats import Stats
 from argo_nagios_ams_publisher.shared import Shared
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
@@ -58,6 +59,14 @@ def init_dirq_consume(workers, daemonized):
             consumers[-1].daemon = True
         consumers[-1].start()
 
+    localevents.update({'lck-stats': Lock()})
+    localevents.update({'usr1-stats': Event()})
+    localevents.update({'term-stats': Event()})
+    localevents.update({'termth-stats': ThreadEvent()})
+    localevents.update({'giveup-stats': Event()})
+    stats = Stats(shared.general['statsocket'])
+    stats.start()
+
     while True:
         for c in consumers:
             if localevents['giveup-'+c.name].is_set():
@@ -70,6 +79,9 @@ def init_dirq_consume(workers, daemonized):
                 localevents['term-'+c.name].set()
                 localevents['termth-'+c.name].set()
                 c.join(1)
+            localevents['term-stats'].set()
+            localevents['termth-stats'].set()
+            stats.join(1)
             raise SystemExit(0)
 
         if shared.event('usr1').is_set():
@@ -83,4 +95,5 @@ def init_dirq_consume(workers, daemonized):
         except KeyboardInterrupt:
             for c in consumers:
                 c.join(1)
+            stats.join(1)
             raise SystemExit(0)
