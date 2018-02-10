@@ -1,7 +1,5 @@
 import avro.schema
 import datetime
-import decimal
-import os
 import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
@@ -11,7 +9,7 @@ from argo_nagios_ams_publisher.shared import Shared
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
 
-def init_dirq_consume(workers, daemonized):
+def init_dirq_consume(workers, daemonized, sockstat):
     """
        Initialize local cache/directory queue consumers. For each Queue defined
        in configuration, one worker process will be spawned and Publisher will
@@ -64,8 +62,9 @@ def init_dirq_consume(workers, daemonized):
     localevents.update({'term-stats': Event()})
     localevents.update({'termth-stats': ThreadEvent()})
     localevents.update({'giveup-stats': Event()})
-    stats = Stats(shared.general['statsocket'])
-    stats.start()
+    statsp = Stats(events=localevents, sock=sockstat)
+    statsp.daemon = True
+    statsp.start()
 
     while True:
         for c in consumers:
@@ -81,7 +80,7 @@ def init_dirq_consume(workers, daemonized):
                 c.join(1)
             localevents['term-stats'].set()
             localevents['termth-stats'].set()
-            stats.join(1)
+            statsp.join(1)
             raise SystemExit(0)
 
         if shared.event('usr1').is_set():
@@ -95,5 +94,5 @@ def init_dirq_consume(workers, daemonized):
         except KeyboardInterrupt:
             for c in consumers:
                 c.join(1)
-            stats.join(1)
+            statsp.join(1)
             raise SystemExit(0)
