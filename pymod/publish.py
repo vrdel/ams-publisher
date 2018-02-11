@@ -19,11 +19,6 @@ class Publish(object):
         self.laststattime = time.time()
         self.name = worker
 
-    def init_attrs(self, confopts):
-        for k in confopts.iterkeys():
-            code = "self.{0} = confopts.get('{0}')".format(k)
-            exec code
-
     def stats(self, reset=False):
         def statmsg(hours):
             self.shared.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
