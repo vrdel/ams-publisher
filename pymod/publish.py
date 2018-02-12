@@ -8,31 +8,15 @@ from io import BytesIO
 from argo_ams_library.ams import ArgoMessagingService
 from argo_ams_library.amsmsg import AmsMessage
 from argo_nagios_ams_publisher.shared import Shared
+from argo_nagios_ams_publisher.stats import StatSig
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
-class Publish(object):
+class Publish(StatSig):
     """
        Base publisher class that initialize statistic data
     """
     def __init__(self, worker=None):
-        self.nmsgs_published = 0
-        self.laststattime = time.time()
-        self.name = worker
-
-    def stats(self, reset=False):
-        def statmsg(hours):
-            self.shared.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
-                                                                                   self.name,
-                                                                                   self.nmsgs_published,
-                                                                                   hours
-                                                                                  ))
-        if reset:
-            statmsg(self.shared.general['statseveryhour'])
-            self.nmsgs_published = 0
-            self.laststattime = time.time()
-        else:
-            sincelaststat = time.time() - self.laststattime
-            statmsg(sincelaststat/3600)
+        super(Publish, self).__init__(worker=worker)
 
     def write(self, num=0):
         pass

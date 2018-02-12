@@ -4,13 +4,14 @@ import time
 
 from argo_nagios_ams_publisher.purge import Purger
 from argo_nagios_ams_publisher.shared import Shared
+from argo_nagios_ams_publisher.stats import StatSig
 
 from collections import deque
 from datetime import datetime
 from messaging.queue.dqs import DQS
 from multiprocessing import Process, Event
 
-class ConsumerQueue(Process):
+class ConsumerQueue(StatSig, Process):
     """
        Class represents spawned worker process that will periodically check and
        consume local cache/directory queue. It will initialize associated
@@ -20,6 +21,7 @@ class ConsumerQueue(Process):
     """
     def __init__(self, events, worker=None):
         Process.__init__(self)
+        super(ConsumerQueue, self).__init__(worker=worker)
         self.shared = Shared(worker=worker)
         self.name = worker
         self.events = events
@@ -40,20 +42,6 @@ class ConsumerQueue(Process):
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
-
-    def stats(self, reset=False):
-        def statmsg(hours):
-            self.shared.log.info('{0} {1}: consumed {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
-                                                                        self.name,
-                                                                        self.nmsgs_consumed,
-                                                                        hours))
-        if reset:
-            statmsg(self.shared.general['statseveryhour'])
-            self.nmsgs_consumed = 0
-            self.prevstattime = int(datetime.now().strftime('%s'))
-        else:
-            sincelaststat = time.time() - self.prevstattime
-            statmsg(sincelaststat/3600)
 
     def run(self):
         self.prevstattime = int(datetime.now().strftime('%s'))

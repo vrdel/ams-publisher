@@ -54,7 +54,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         consumers.append(ConsumerQueue(events=localevents, worker=w))
         if not daemonized:
-            consumers[-1].daemon = True
+            consumers[-1].daemon = False
         consumers[-1].start()
 
     localevents.update({'lck-stats': Lock()})
@@ -63,7 +63,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
     localevents.update({'termth-stats': ThreadEvent()})
     localevents.update({'giveup-stats': Event()})
     statsp = Stats(events=localevents, sock=sockstat)
-    statsp.daemon = True
+    statsp.daemon = False
     statsp.start()
 
     while True:
