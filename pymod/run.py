@@ -4,7 +4,7 @@ import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
 from argo_nagios_ams_publisher.consume import ConsumerQueue
-from argo_nagios_ams_publisher.stats import Stats
+from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
@@ -62,7 +62,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
     localevents.update({'term-stats': Event()})
     localevents.update({'termth-stats': ThreadEvent()})
     localevents.update({'giveup-stats': Event()})
-    statsp = Stats(events=localevents, sock=sockstat)
+    statsp = StatSock(events=localevents, sock=sockstat)
     statsp.daemon = False
     statsp.start()
 

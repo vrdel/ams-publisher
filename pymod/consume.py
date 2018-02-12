@@ -21,12 +21,11 @@ class ConsumerQueue(StatSig, Process):
     """
     def __init__(self, events, worker=None):
         Process.__init__(self)
-        super(ConsumerQueue, self).__init__(worker=worker)
         self.shared = Shared(worker=worker)
+        super(ConsumerQueue, self).__init__(worker=worker)
         self.name = worker
         self.events = events
 
-        self.nmsgs_consumed = 0
         self.sess_consumed = 0
 
         self.seenmsgs = set()
@@ -104,7 +103,7 @@ class ConsumerQueue(StatSig, Process):
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
             self.inmemq.append(elem)
-            self.nmsgs_consumed += 1
+            self.shared.stats['consumed'] += 1
             self.sess_consumed += 1
             if num and self.sess_consumed == num:
                 self.sess_consumed = 0

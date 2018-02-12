@@ -10,30 +10,40 @@ from argo_nagios_ams_publisher.shared import Shared
 class StatSig(object):
     def __init__(self, worker):
         self.laststattime = time.time()
-        self.nmsgs_published = 0
         self.name = worker
+        self.msgdo = 'sent' if self.iam_publisher() else 'consumed'
+        self.reset()
+
+    def iam_publisher(self):
         if 'Publish' in self.__class__.__name__:
-            self.msgdo = 'sent'
-        elif 'Consume' in self.__class__.__name__:
-            self.msgdo = 'consumed'
+            return True
+        else:
+            return False
+
+    def reset(self):
+        if self.iam_publisher():
+            self.shared.stats['published'] = 0
+        else:
+            self.shared.stats['consumed'] = 0
 
     def stats(self, reset=False):
         def statmsg(hours):
+            nmsg = self.shared.stats['published'] if self.iam_publisher() else self.shared.stats['consumed']
             self.shared.log.info('{0} {1}: {2} {3} msgs in {4:0.2f} hours'.format(self.__class__.__name__,
                                                                                   self.name,
                                                                                   self.msgdo,
-                                                                                  self.nmsgs_published,
+                                                                                  nmsg,
                                                                                   hours
                                                                                   ))
         if reset:
             statmsg(self.shared.general['statseveryhour'])
-            self.nmsgs_published = 0
+            self.reset()
             self.laststattime = time.time()
         else:
             sincelaststat = time.time() - self.laststattime
             statmsg(sincelaststat/3600)
 
-class Stats(Process):
+class StatSock(Process):
     def __init__(self, events, sock):
         Process.__init__(self)
         self.events = events

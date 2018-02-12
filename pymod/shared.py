@@ -20,11 +20,19 @@ class Shared(object):
                 self.general = confopts['general']
             if not getattr(self, 'connection', False):
                 self.connection = confopts['connection']
+            if not getattr(self, '_stats', False):
+                self._stats = dict()
             self.workers = self._queues.keys()
         if worker:
             self.worker = worker
             self.queue = self._queues[worker]
             self.topic = self._topics[worker]
+            if worker not in self._stats:
+                self._stats[worker] = dict(published=0)
+                self._stats[worker] = dict(consumed=0)
+            else:
+                self.stats = self._stats[worker]
+
 
     def add_event(self, name, ev):
         if not getattr(self, 'events', False):
