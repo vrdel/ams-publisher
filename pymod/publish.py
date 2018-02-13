@@ -91,6 +91,9 @@ class MessagingPublisher(Publish):
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.connection['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self.shared.stats['published'] += self.shared.topic['bulk']
+                        for m in ['15', '30', '60', '180', '360', '720', '1440']:
+                            codepub = "self.shared.stats['published%s'] += self.shared.topic['bulk']" % m
+                            exec codepub
                         self.inmemq.rotate(-self.shared.topic['bulk'])
                         break
 

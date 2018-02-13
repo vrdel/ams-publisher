@@ -100,10 +100,16 @@ class ConsumerQueue(StatSig, Process):
                 self.cleanup()
                 raise SystemExit(0)
 
+    def _increm_intervalcounters(self, num):
+        for m in ['15', '30', '60', '180', '360', '720', '1440']:
+            codecon = "self.shared.stats['consumed%s'] += %d" % (m, num)
+            exec codecon
+
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
             self.inmemq.append(elem)
             self.shared.stats['consumed'] += 1
+            self._increm_intervalcounters(1)
             self.sess_consumed += 1
             if num and self.sess_consumed == num:
                 self.sess_consumed = 0
