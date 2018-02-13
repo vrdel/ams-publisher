@@ -30,6 +30,11 @@ class Shared(object):
             if worker not in self._stats:
                 self._stats[worker] = dict(published=0)
                 self._stats[worker] = dict(consumed=0)
+                for m in ['15', '30', '60', '180', '360', '720', '1440']:
+                    codepub = "self._stats[worker] = dict(published%s=0)" % m
+                    codecon = "self._stats[worker] = dict(consumed%s=0)" % m
+                    exec codepub
+                    exec codecon
             else:
                 self.stats = self._stats[worker]
 
