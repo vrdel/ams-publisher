@@ -91,8 +91,8 @@ class ConsumerQueue(StatSig, Process):
                         raise SystemExit(0)
 
                 if int(datetime.now().strftime('%s')) - self.prevstattime >= self.shared.general['statseveryhour'] * 3600:
-                    self.stats(reset=True)
-                    self.publisher.stats(reset=True)
+                    self.stat_reset()
+                    self.publisher.stat_reset()
 
                 time.sleep(decimal.Decimal(1) / decimal.Decimal(self.shared.queue['rate']))
 

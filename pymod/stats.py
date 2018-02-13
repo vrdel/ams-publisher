@@ -11,37 +11,38 @@ class StatSig(object):
     def __init__(self, worker):
         self.laststattime = time.time()
         self.name = worker
-        self.msgdo = 'sent' if self.iam_publisher() else 'consumed'
-        self.reset()
+        self.msgdo = 'sent' if self._iam_publisher() else 'consumed'
+        self._reset()
 
-    def iam_publisher(self):
+    def _stat_msg(hours):
+        nmsg = self.shared.stats['published'] if self._iam_publisher() else self.shared.stats['consumed']
+        self.shared.log.info('{0} {1}: {2} {3} msgs in {4:0.2f} hours'.format(self.__class__.__name__,
+                                                                              self.name,
+                                                                              self.msgdo,
+                                                                              nmsg,
+                                                                              hours))
+
+    def _reset(self):
+        if self._iam_publisher():
+            self.shared.stats['published'] = 0
+        else:
+            self.shared.stats['consumed'] = 0
+
+    def _iam_publisher(self):
         if 'Publish' in self.__class__.__name__:
             return True
         else:
             return False
 
-    def reset(self):
-        if self.iam_publisher():
-            self.shared.stats['published'] = 0
-        else:
-            self.shared.stats['consumed'] = 0
+    def stat_reset(self):
+        self._stat_msg(self.shared.general['statseveryhour'])
+        self._reset()
+        self.laststattime = time.time()
 
-    def stats(self, reset=False):
-        def statmsg(hours):
-            nmsg = self.shared.stats['published'] if self.iam_publisher() else self.shared.stats['consumed']
-            self.shared.log.info('{0} {1}: {2} {3} msgs in {4:0.2f} hours'.format(self.__class__.__name__,
-                                                                                  self.name,
-                                                                                  self.msgdo,
-                                                                                  nmsg,
-                                                                                  hours
-                                                                                  ))
-        if reset:
-            statmsg(self.shared.general['statseveryhour'])
-            self.reset()
-            self.laststattime = time.time()
-        else:
-            sincelaststat = time.time() - self.laststattime
-            statmsg(sincelaststat/3600)
+    def stats(self):
+        sincelaststat = time.time() - self.laststattime
+        self._stat_msg(sincelaststat/3600)
+
 
 class StatSock(Process):
     def __init__(self, events, sock):
