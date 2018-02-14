@@ -35,8 +35,7 @@ class Shared(object):
                     codecon = "self._stats[worker].update(dict(consumed%s=0))" % m
                     exec codepub
                     exec codecon
-            else:
-                self.stats = self._stats[worker]
+            self.stats = self._stats[worker]
 
 
     def add_event(self, name, ev):
@@ -48,6 +47,9 @@ class Shared(object):
         if not getattr(self, 'log', False):
             self.log= None
         self.log = logger
+
+    def get_nmsg_interval(self, worker, key):
+        return self._stats[worker][key]
 
     def event(self, name):
         return self.events.get(name)
