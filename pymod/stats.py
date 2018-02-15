@@ -53,6 +53,8 @@ class StatSock(Process):
         self.events = events
         self.shared = Shared()
         self.sock = sock
+        self._int2idx = {'15': 0, '30': 1, '60': 2, '180': 3, '360': 4,
+                         '720': 5, '1440': 6}
 
         try:
             self.sock.listen(1)
@@ -74,7 +76,9 @@ class StatSock(Process):
                 w, g = c.split('+')
                 w = w.split(':')[1]
                 g = g.split(':')[1]
-                queries.append((w, g))
+                r = re.search('([a-zA-Z]+)([0-9]+)', g)
+                if r:
+                    queries.append((w, r.group(1), self._int2idx[r.group(2)]))
 
         if len(queries) > 0:
             return queries
@@ -84,7 +88,7 @@ class StatSock(Process):
     def answer(self, query):
         a = ''
         for q in query:
-            r = self.shared.get_nmsg_interval(q[0], q[1])
+            r = self.shared.get_nmsg_interval(q[0], q[1], q[2])
             a += 'w:%s+r:%s ' % (str(q[0]), str(r))
 
         return a[:-1]
@@ -102,7 +106,7 @@ class StatSock(Process):
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        self.shared.log.error('Answer %s' % self.shared.statint['metrics']['consumed'][:])
+                        self.shared.log.error(a)
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()

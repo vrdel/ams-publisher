@@ -46,8 +46,8 @@ class Shared(object):
             self.log= None
         self.log = logger
 
-    def get_nmsg_interval(self, worker, key):
-        return self._stats[worker][key]
+    def get_nmsg_interval(self, worker, what, interval):
+        return self.statint[worker][what][interval]
 
     def event(self, name):
         return self.events.get(name)

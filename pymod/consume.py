@@ -25,7 +25,6 @@ class ConsumerQueue(StatSig, Process):
         super(ConsumerQueue, self).__init__(worker=worker)
         self.name = worker
         self.events = events
-        # self.statint = statint
         self.sess_consumed = 0
 
         self.seenmsgs = set()
