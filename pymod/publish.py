@@ -8,36 +8,15 @@ from io import BytesIO
 from argo_ams_library.ams import ArgoMessagingService
 from argo_ams_library.amsmsg import AmsMessage
 from argo_nagios_ams_publisher.shared import Shared
+from argo_nagios_ams_publisher.stats import StatSig
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
-class Publish(object):
+class Publish(StatSig):
     """
        Base publisher class that initialize statistic data
     """
     def __init__(self, worker=None):
-        self.nmsgs_published = 0
-        self.laststattime = time.time()
-        self.name = worker
-
-    def init_attrs(self, confopts):
-        for k in confopts.iterkeys():
-            code = "self.{0} = confopts.get('{0}')".format(k)
-            exec code
-
-    def stats(self, reset=False):
-        def statmsg(hours):
-            self.shared.log.info('{0} {1}: sent {2} msgs in {3:0.2f} hours'.format(self.__class__.__name__,
-                                                                                   self.name,
-                                                                                   self.nmsgs_published,
-                                                                                   hours
-                                                                                  ))
-        if reset:
-            statmsg(self.shared.general['statseveryhour'])
-            self.nmsgs_published = 0
-            self.laststattime = time.time()
-        else:
-            sincelaststat = time.time() - self.laststattime
-            statmsg(sincelaststat/3600)
+        super(Publish, self).__init__(worker=worker)
 
     def write(self, num=0):
         pass
@@ -62,7 +41,7 @@ class FilePublisher(Publish):
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.shared.topic['bulk'])])
                 published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-                self.nmsgs_published += self.shared.topic['bulk']
+                self.shared.stats['published'] += self.shared.topic['bulk']
 
                 self.inmemq.rotate(-self.shared.topic['bulk'])
 
@@ -111,7 +90,10 @@ class MessagingPublisher(Publish):
                         lck.acquire(False)
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.connection['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-                        self.nmsgs_published += self.shared.topic['bulk']
+                        self.shared.stats['published'] += self.shared.topic['bulk']
+                        for m in ['15', '30', '60', '180', '360', '720', '1440']:
+                            codepub = "self.shared.stats['published%s'] += self.shared.topic['bulk']" % m
+                            exec codepub
                         self.inmemq.rotate(-self.shared.topic['bulk'])
                         break
 
@@ -126,7 +108,7 @@ class MessagingPublisher(Publish):
                             i = 0
                             while i < n:
                                 if self.events['term-'+self.name].is_set():
-                                    self.shared.log.warning('Process {0} received SIGTERM'.format(self.name))
+                                    self.shared.log.info('Process {0} received SIGTERM'.format(self.name))
                                     raise e
                                 if self.events['usr1-'+self.name].is_set():
                                     self.stats()

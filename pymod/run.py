@@ -1,15 +1,15 @@
-import decimal
 import avro.schema
-import os
+import datetime
 import time
 
 from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
 from argo_nagios_ams_publisher.consume import ConsumerQueue
+from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
 from multiprocessing import Event, Lock
 from threading import Event as ThreadEvent
 
-def init_dirq_consume(workers, daemonized):
+def init_dirq_consume(workers, daemonized, sockstat):
     """
        Initialize local cache/directory queue consumers. For each Queue defined
        in configuration, one worker process will be spawned and Publisher will
@@ -26,6 +26,7 @@ def init_dirq_consume(workers, daemonized):
         shared = Shared(worker=w)
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
+            shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if shared.general['publishmsgfile']:
             shared.runtime.update(publisher=FilePublisher)
@@ -53,8 +54,17 @@ def init_dirq_consume(workers, daemonized):
 
         consumers.append(ConsumerQueue(events=localevents, worker=w))
         if not daemonized:
-            consumers[-1].daemon = True
+            consumers[-1].daemon = False
         consumers[-1].start()
+
+    localevents.update({'lck-stats': Lock()})
+    localevents.update({'usr1-stats': Event()})
+    localevents.update({'term-stats': Event()})
+    localevents.update({'termth-stats': ThreadEvent()})
+    localevents.update({'giveup-stats': Event()})
+    statsp = StatSock(events=localevents, sock=sockstat)
+    statsp.daemon = False
+    statsp.start()
 
     while True:
         for c in consumers:
@@ -68,9 +78,13 @@ def init_dirq_consume(workers, daemonized):
                 localevents['term-'+c.name].set()
                 localevents['termth-'+c.name].set()
                 c.join(1)
+            localevents['term-stats'].set()
+            localevents['termth-stats'].set()
+            statsp.join(1)
             raise SystemExit(0)
 
         if shared.event('usr1').is_set():
+            shared.log.info('Started %s' % shared.runtime['started'])
             for c in consumers:
                 localevents['usr1-'+c.name].set()
             shared.event('usr1').clear()
@@ -80,4 +94,5 @@ def init_dirq_consume(workers, daemonized):
         except KeyboardInterrupt:
             for c in consumers:
                 c.join(1)
+            statsp.join(1)
             raise SystemExit(0)

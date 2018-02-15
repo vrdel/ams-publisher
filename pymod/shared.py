@@ -12,30 +12,44 @@ class Shared(object):
 
     def __init__(self, confopts=None, worker=None):
         if confopts:
-            if not getattr(self.__class__, '_queues', False):
-                self.__class__._queues = confopts['queues']
-            if not getattr(self.__class__, '_topics', False):
-                self.__class__._topics = confopts['topics']
-            if not getattr(self.__class__, 'general', False):
-                self.__class__.general = confopts['general']
-            if not getattr(self.__class__, 'connection', False):
-                self.__class__.connection = confopts['connection']
-            self.workers = self.__class__._queues.keys()
+            if not getattr(self, '_queues', False):
+                self._queues = confopts['queues']
+            if not getattr(self, '_topics', False):
+                self._topics = confopts['topics']
+            if not getattr(self, 'general', False):
+                self.general = confopts['general']
+            if not getattr(self, 'connection', False):
+                self.connection = confopts['connection']
+            if not getattr(self, '_stats', False):
+                self._stats = dict()
+            self.workers = self._queues.keys()
         if worker:
             self.worker = worker
-            self.queue = self.__class__._queues[worker]
-            self.topic = self.__class__._topics[worker]
+            self.queue = self._queues[worker]
+            self.topic = self._topics[worker]
+            if worker not in self._stats:
+                self._stats[worker] = dict(published=0)
+                self._stats[worker].update(dict(consumed=0))
+                for m in ['15', '30', '60', '180', '360', '720', '1440']:
+                    codepub = "self._stats[worker].update(dict(published%s=0))" % m
+                    codecon = "self._stats[worker].update(dict(consumed%s=0))" % m
+                    exec codepub
+                    exec codecon
+            self.stats = self._stats[worker]
+
 
     def add_event(self, name, ev):
-        if not getattr(self.__class__, 'events', False):
-            self.__class__.events = dict()
-        self.__class__.events.update({name: ev})
+        if not getattr(self, 'events', False):
+            self.events = dict()
+        self.events.update({name: ev})
 
     def add_log(self, logger):
-        if not getattr(self.__class__, 'log', False):
-            self.__class__.log= None
-        self.__class__.log = logger
-        self.log = self.__class__.log
+        if not getattr(self, 'log', False):
+            self.log= None
+        self.log = logger
+
+    def get_nmsg_interval(self, worker, key):
+        return self._stats[worker][key]
 
     def event(self, name):
-        return self.__class__.events.get(name)
+        return self.events.get(name)

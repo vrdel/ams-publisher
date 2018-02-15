@@ -5,6 +5,8 @@ from argo_nagios_ams_publisher.log import Logger
 from argo_nagios_ams_publisher.run import init_dirq_consume
 from argo_nagios_ams_publisher.shared import Shared
 
+from datetime import datetime
+
 import argparse
 import daemon
 import errno
@@ -13,6 +15,7 @@ import os
 import psutil
 import pwd
 import signal
+import socket
 import sys
 
 """
@@ -29,6 +32,13 @@ logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
 shared = None
 logger = None
+
+
+def setup_statssocket(path):
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.bind(path)
+
+    return sock
 
 def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
@@ -63,14 +73,15 @@ def daemon_start(context_daemon, restart=False):
     context_daemon.uid = uid
     context_daemon.gid = gid
     os.chown(shared.log.fileloghandle.name, uid, gid)
-    context_daemon.files_preserve = [shared.log.fileloghandle]
+    sock = setup_statssocket(shared.general['statsocket'])
+    context_daemon.files_preserve = [shared.log.fileloghandle, sock.fileno()]
 
     if not restart:
         shared.log.info('Started')
 
     context_daemon.open()
     with context_daemon:
-        init_dirq_consume(shared.workers, daemonized=True)
+        init_dirq_consume(shared.workers, daemonized=True, sockstat=sock)
 
 def daemon_stop(context_daemon, restart=False):
     if context_daemon.pidfile.is_locked():
@@ -103,7 +114,8 @@ def daemon_status(context_daemon):
         pid = context_daemon.pidfile.read_pid()
 
         try:
-            psutil.Process(pid=pid)
+            p = psutil.Process(pid=pid)
+            p.send_signal(signal.SIGUSR1)
         except psutil.NoSuchProcess:
             shared.log.info('Not running - stale pidfile')
             return 1
@@ -182,7 +194,8 @@ def main():
         try:
             confopts = parse_config()
             shared = Shared(confopts=confopts)
-            init_dirq_consume(shared.workers, daemonized=False)
+            sock = setup_statssocket(shared.general['statsocket'])
+            init_dirq_consume(shared.workers, daemonized=False, sockstat=sock)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
