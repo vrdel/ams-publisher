@@ -102,8 +102,7 @@ class StatSock(Process):
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        # self.shared.log.error('Answer %s %d' % (self.shared._stats, id(self.shared._stats['metrics'])))
-                        self.shared.log.error('Answer %s' % a)
+                        self.shared.log.error('Answer %s' % self.shared.statint['metrics']['consumed'][:])
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()
