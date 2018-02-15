@@ -21,6 +21,10 @@ class Publish(StatSig):
     def write(self, num=0):
         pass
 
+    def _increm_intervalcounters(self, num):
+        for i in range(len(self.shared.statint[self.name]['published'])):
+            self.shared.statint[self.name]['published'][i] += num
+
 class FilePublisher(Publish):
     """
        Publisher that write the messages into a file. Used only for debugging
@@ -30,7 +34,7 @@ class FilePublisher(Publish):
         self.shared = Shared(worker=worker)
         self.inmemq = self.shared.runtime['inmemq']
         self.pubnumloop = self.shared.runtime['pubnumloop']
-        self.worker = worker
+        self.name = worker
         super(FilePublisher, self).__init__(worker=worker)
 
     def write(self, num=0):
@@ -91,9 +95,7 @@ class MessagingPublisher(Publish):
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.connection['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self.shared.stats['published'] += self.shared.topic['bulk']
-                        for m in ['15', '30', '60', '180', '360', '720', '1440']:
-                            codepub = "self.shared.stats['published%s'] += self.shared.topic['bulk']" % m
-                            exec codepub
+                        self._increm_intervalcounters(self.shared.topic['bulk'])
                         self.inmemq.rotate(-self.shared.topic['bulk'])
                         break
 
