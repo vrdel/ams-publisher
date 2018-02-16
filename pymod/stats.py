@@ -147,7 +147,7 @@ class StatSock(Process):
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        self.shared.log.error(a)
+                        conn.send(a, maxcmdlength)
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()
