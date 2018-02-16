@@ -77,8 +77,14 @@ class StatSock(Process):
                 w = w.split(':')[1]
                 g = g.split(':')[1]
                 r = re.search('([a-zA-Z]+)([0-9]+)', g)
-                if r:
-                    queries.append((w, r.group(1), self._int2idx[r.group(2)]))
+                try:
+                    if r:
+                        queries.append((w, r.group(1), self._int2idx[r.group(2)]))
+                    else:
+                        queries.append((w, 'error'))
+                except KeyError:
+                    queries.append((w, 'error'))
+
 
         if len(queries) > 0:
             return queries
@@ -88,8 +94,11 @@ class StatSock(Process):
     def answer(self, query):
         a = ''
         for q in query:
-            r = self.shared.get_nmsg_interval(q[0], q[1], q[2])
-            a += 'w:%s+r:%s ' % (str(q[0]), str(r))
+            if q[1] != 'error':
+                r = self.shared.get_nmsg_interval(q[0], q[1], q[2])
+                a += 'w:%s+r:%s ' % (str(q[0]), str(r))
+            else:
+                a += 'w:%s+r:error ' % str(q[0])
 
         return a[:-1]
 
