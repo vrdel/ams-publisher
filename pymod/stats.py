@@ -1,11 +1,12 @@
 import socket
 import select
 import os
-import signal
 import time
 import re
+import copy
 
-from multiprocessing import Process, Event
+from threading import Thread
+from multiprocessing import Process
 from argo_nagios_ams_publisher.shared import Shared
 
 maxcmdlength = 128
@@ -46,6 +47,37 @@ class StatSig(object):
         sincelaststat = time.time() - self.laststattime
         self._stat_msg(sincelaststat/3600)
 
+class Reset(Thread):
+    def __init__(self, events, map):
+        Thread.__init__(self)
+        self.events = events
+        self.shared = Shared()
+        self.map = map
+        if not self.shared.runtime['daemonized']:
+            self.daemon = True
+        self.init_lastreset()
+        self.start()
+
+    def init_lastreset(self):
+        self.last_reset = copy.copy(self.map)
+        now = int(time.time())
+        for k, v in self.last_reset.iteritems():
+            self.last_reset[k] = now
+
+    def run(self):
+        while True:
+            if self.events['termth-stats'].is_set():
+                break
+            now = int(time.time())
+            for k, v in self.last_reset.iteritems():
+                if now - self.last_reset[k] >= int(k) * 60:
+                    for what in ['consumed', 'published']:
+                        for w in self.shared.workers:
+                            idx = self.map[k]
+                            self.shared.statint[w][what][idx] = 0
+                    self.last_reset[k] = now
+
+            time.sleep(self.shared.runtime['evsleep'])
 
 class StatSock(Process):
     def __init__(self, events, sock):
@@ -55,11 +87,12 @@ class StatSock(Process):
         self.sock = sock
         self._int2idx = {'15': 0, '30': 1, '60': 2, '180': 3, '360': 4,
                          '720': 5, '1440': 6}
+        self.resetth = Reset(events=events, map=self._int2idx)
 
         try:
             self.sock.listen(1)
         except socket.error as m:
-            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (sockpath, repr(m)))
+            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (self.shared.general['statsocket'], repr(m)))
             raise SystemExit(1)
 
     def _cleanup(self):
@@ -84,7 +117,6 @@ class StatSock(Process):
                         queries.append((w, 'error'))
                 except KeyError:
                     queries.append((w, 'error'))
-
 
         if len(queries) > 0:
             return queries
