@@ -12,6 +12,11 @@ from argo_nagios_ams_publisher.shared import Shared
 maxcmdlength = 128
 
 class StatSig(object):
+    """
+       Class is meant to be subclassed by ConsumerQueue and Publish classes for
+       the purpose of implementing common methods that will be called on SIGUSR1
+       event and write consumed/published statistics for each worker.
+    """
     def __init__(self, worker):
         self.laststattime = time.time()
         self.name = worker
@@ -48,6 +53,10 @@ class StatSig(object):
         self._stat_msg(sincelaststat/3600)
 
 class Reset(Thread):
+    """
+       Reset helper thread that resets counters representing published and
+       consumed number of messages for each worker.
+    """
     def __init__(self, events, map):
         Thread.__init__(self)
         self.events = events
@@ -80,6 +89,18 @@ class Reset(Thread):
             time.sleep(self.shared.runtime['evsleep'])
 
 class StatSock(Process):
+    """
+       Query'n'Answer process that listens and parses queries on local socket
+       and replies back with answer. Queries are in form of
+
+         "w:<worker>+g:<published/consumed><interval>"
+
+       where for each worker process consumed or published number of messages
+       can be asked for interval of last 15, 30, 60, 180, 360, 720 and 1440
+       minutes. Answer is served as:
+
+         "w:<worker>+r:<num of messages or error>"
+    """
     def __init__(self, events, sock):
         Process.__init__(self)
         self.events = events
