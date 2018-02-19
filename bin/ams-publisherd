@@ -35,6 +35,8 @@ logger = None
 
 
 def setup_statssocket(path):
+    if os.path.exists(path):
+        os.unlink(path)
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.bind(path)
 
