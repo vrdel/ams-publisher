@@ -90,7 +90,7 @@ class Reset(Thread):
 
 class StatSock(Process):
     """
-       Query'n'Answer process that listens and parses queries on local socket
+       Listen'n'Answer process that listens and parses queries on local socket
        and replies back with answer. Queries are in form of
 
          "w:<worker>+g:<published/consumed><interval>"
