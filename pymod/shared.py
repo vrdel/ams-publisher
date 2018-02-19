@@ -22,6 +22,7 @@ class Shared(object):
                 self.connection = confopts['connection']
             if not getattr(self, '_stats', False):
                 self._stats = dict()
+                self.statint = dict()
             self.workers = self._queues.keys()
         if worker:
             self.worker = worker
@@ -30,11 +31,8 @@ class Shared(object):
             if worker not in self._stats:
                 self._stats[worker] = dict(published=0)
                 self._stats[worker].update(dict(consumed=0))
-                for m in ['15', '30', '60', '180', '360', '720', '1440']:
-                    codepub = "self._stats[worker].update(dict(published%s=0))" % m
-                    codecon = "self._stats[worker].update(dict(consumed%s=0))" % m
-                    exec codepub
-                    exec codecon
+            if worker not in self.statint:
+                self.statint[worker] = dict(published=None, consumed=None)
             self.stats = self._stats[worker]
 
 
@@ -48,8 +46,8 @@ class Shared(object):
             self.log= None
         self.log = logger
 
-    def get_nmsg_interval(self, worker, key):
-        return self._stats[worker][key]
+    def get_nmsg_interval(self, worker, what, interval):
+        return self.statint[worker][what][interval]
 
     def event(self, name):
         return self.events.get(name)

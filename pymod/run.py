@@ -6,17 +6,18 @@ from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherM
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
-from multiprocessing import Event, Lock
+from multiprocessing import Event, Lock, Array
 from threading import Event as ThreadEvent
 
 def init_dirq_consume(workers, daemonized, sockstat):
     """
        Initialize local cache/directory queue consumers. For each Queue defined
        in configuration, one worker process will be spawned and Publisher will
-       be associated. Register also local SIGTERM and SIGUSR events that will
-       be triggered upon receiving same signals from daemon control process and
-       that will be used to control the behaviour of spawned subprocesses and
-       threads.
+       be associated. Additional one process will be spawned to listen for
+       queries on the socket. Register also local SIGTERM and SIGUSR events
+       that will be triggered upon receiving same signals from daemon control
+       process and that will be used to control the behaviour of spawned
+       subprocesses and threads.
     """
     evsleep = 2
     consumers = list()
@@ -24,6 +25,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
     for w in workers:
         shared = Shared(worker=w)
+        shared.statint[w]['published'] = Array('i', 7)
+        shared.statint[w]['consumed'] = Array('i', 7)
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
             shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -57,14 +60,15 @@ def init_dirq_consume(workers, daemonized, sockstat):
             consumers[-1].daemon = False
         consumers[-1].start()
 
-    localevents.update({'lck-stats': Lock()})
-    localevents.update({'usr1-stats': Event()})
-    localevents.update({'term-stats': Event()})
-    localevents.update({'termth-stats': ThreadEvent()})
-    localevents.update({'giveup-stats': Event()})
-    statsp = StatSock(events=localevents, sock=sockstat)
-    statsp.daemon = False
-    statsp.start()
+    if w:
+        localevents.update({'lck-stats': Lock()})
+        localevents.update({'usr1-stats': Event()})
+        localevents.update({'term-stats': Event()})
+        localevents.update({'termth-stats': ThreadEvent()})
+        localevents.update({'giveup-stats': Event()})
+        statsp = StatSock(events=localevents, sock=sockstat)
+        statsp.daemon = False
+        statsp.start()
 
     while True:
         for c in consumers:
