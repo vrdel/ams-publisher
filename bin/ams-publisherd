@@ -35,10 +35,16 @@ logger = None
 
 
 def setup_statssocket(path):
+    global shared
+
     if os.path.exists(path):
         os.unlink(path)
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.bind(path)
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(path)
+    except socket.error as e:
+        shared.log.error('Error setting up socket: %s - %s' % (path, str(e)))
+        raise SystemExit(1)
 
     return sock
 
