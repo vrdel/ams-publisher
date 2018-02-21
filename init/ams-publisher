@@ -2,17 +2,19 @@
 # ams-publisher daemon
 # chkconfig: 345 20 80
 # description: ams-publisher daemon
-# processname: ams-publisherd  
+# processname: ams-publisher  
 
 . /etc/rc.d/init.d/functions
-PROG_NAME="ams-publisherd"
+PROG_NAME="ams-publisher"
 DAEMON_PATH="/usr/bin/ams-publisherd"
+LOCK_FILE=/var/lock/subsys/$PROG_NAME
 
 case "$1" in
 start)
 	echo $"Starting $PROG_NAME: "
 	msg=$(daemon $DAEMON_PATH -d start)
 	retval=$?
+	[ $retval -eq 0 ] && touch $LOCK_FILE
 	echo $msg
 	exit $retval
 ;;
@@ -20,13 +22,16 @@ stop)
 	echo $"Stopping $PROG_NAME: "
 	msg=$(daemon $DAEMON_PATH -d stop)
 	retval=$?
+	[ $retval -eq 0 ] && rm -f $LOCK_FILE
 	echo $msg
 	exit $retval
 ;;
 restart)
+	rm -f $LOCK_FILE
 	echo $"Restarting $PROG_NAME: "
 	msg=$(daemon $DAEMON_PATH -d restart)
 	retval=$?
+	[ $retval -eq 0 ] && touch $LOCK_FILE
 	echo $msg
 	exit $retval
 ;;

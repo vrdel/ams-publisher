@@ -91,6 +91,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
             shared.log.info('Started %s' % shared.runtime['started'])
             for c in consumers:
                 localevents['usr1-'+c.name].set()
+            localevents['usr1-stats'].set()
             shared.event('usr1').clear()
 
         try:
