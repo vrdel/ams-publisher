@@ -4,6 +4,7 @@ import os
 import time
 import re
 import copy
+import errno
 
 from threading import Thread
 from multiprocessing import Process
@@ -38,10 +39,7 @@ class StatSig(object):
             self.shared.stats['consumed'] = 0
 
     def _iam_publisher(self):
-        if 'Publish' in self.__class__.__name__:
-            return True
-        else:
-            return False
+        return bool('Publish' in self.__class__.__name__)
 
     def stat_reset(self):
         self._stat_msg(self.shared.general['statseveryhour'])
@@ -51,6 +49,7 @@ class StatSig(object):
     def stats(self):
         sincelaststat = time.time() - self.laststattime
         self._stat_msg(sincelaststat/3600)
+
 
 class Reset(Thread):
     """
@@ -88,6 +87,7 @@ class Reset(Thread):
 
             time.sleep(self.shared.runtime['evsleep'])
 
+
 class StatSock(Process):
     """
        Listen'n'Answer process that listens and parses queries on local socket
@@ -103,6 +103,7 @@ class StatSock(Process):
     """
     def __init__(self, events, sock):
         Process.__init__(self)
+        self.poller = select.poll()
         self.events = events
         self.shared = Shared()
         self.sock = sock
@@ -122,7 +123,7 @@ class StatSock(Process):
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
-        m = re.findall('w:\w+\+g:\w+', cmd)
+        m = re.findall(r'w:\w+\+g:\w+', cmd)
         queries = list()
 
         if m:
@@ -156,7 +157,6 @@ class StatSock(Process):
         return a[:-1]
 
     def run(self):
-        self.poller = select.poll()
         self.poller.register(self.sock.fileno(), select.POLLIN)
 
         while True:
@@ -176,3 +176,8 @@ class StatSock(Process):
 
             except KeyboardInterrupt:
                 self._cleanup()
+
+            except select.error as e:
+                if (e[0] == errno.EINTR and
+                    self.events['usr1-stats'].is_set()):
+                    self.events['usr1-stats'].clear()
