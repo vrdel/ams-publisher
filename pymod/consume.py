@@ -2,14 +2,14 @@ import decimal
 import os
 import time
 
+from collections import deque
+from messaging.queue.dqs import DQS
+from multiprocessing import Process
+
 from argo_nagios_ams_publisher.purge import Purger
 from argo_nagios_ams_publisher.shared import Shared
 from argo_nagios_ams_publisher.stats import StatSig
 
-from collections import deque
-from datetime import datetime
-from messaging.queue.dqs import DQS
-from multiprocessing import Process, Event
 
 class ConsumerQueue(StatSig, Process):
     """
@@ -42,7 +42,7 @@ class ConsumerQueue(StatSig, Process):
         self.unlock_dirq_msgs(self.seenmsgs)
 
     def run(self):
-        self.prevstattime = int(datetime.now().strftime('%s'))
+        self.prevstattime = int(time.time())
         termev = self.events['term-'+self.name]
         usr1ev = self.events['usr1-'+self.name]
         lck = self.events['lck-'+self.name]
@@ -89,9 +89,10 @@ class ConsumerQueue(StatSig, Process):
                         evgup.set()
                         raise SystemExit(0)
 
-                if int(datetime.now().strftime('%s')) - self.prevstattime >= self.shared.general['statseveryhour'] * 3600:
+                if int(time.time()) - self.prevstattime >= self.shared.general['statseveryhour'] * 3600:
                     self.stat_reset()
                     self.publisher.stat_reset()
+                    self.prevstattime = int(time.time())
 
                 time.sleep(decimal.Decimal(1) / decimal.Decimal(self.shared.queue['rate']))
 
