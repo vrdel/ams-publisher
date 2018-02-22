@@ -19,7 +19,7 @@ class StatSig(object):
        event and write consumed/published statistics for each worker.
     """
     def __init__(self, worker):
-        self.laststattime = time.time()
+        self.laststattime = int(time.time())
         self.name = worker
         self.msgdo = 'sent' if self._iam_publisher() else 'consumed'
         self._reset()
@@ -44,10 +44,10 @@ class StatSig(object):
     def stat_reset(self):
         self._stat_msg(self.shared.general['statseveryhour'])
         self._reset()
-        self.laststattime = time.time()
+        self.laststattime = int(time.time())
 
     def stats(self):
-        sincelaststat = time.time() - self.laststattime
+        sincelaststat = int(time.time()) - self.laststattime
         self._stat_msg(sincelaststat/3600)
 
 
