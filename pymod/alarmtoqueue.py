@@ -50,7 +50,7 @@ def main():
     tz = pytz.timezone(confopts['general']['timezone'])
     timestamp = datetime.datetime.now(tz).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    parser.add_argument('--queue', required=True, type=str)
+    parser.add_argument('--queue', required=True, nargs='+')
 
     # msg headers
     parser.add_argument('--service', required=True, type=str)
@@ -71,12 +71,13 @@ def main():
     seteuser(pwd.getpwnam(confopts['general']['runasuser']))
 
     try:
-        granularity = config.get_queue_granul(args.queue)
-        mq = DQS(path=args.queue, granularity=granularity)
+        for q in args.queue:
+            granularity = config.get_queue_granul(q)
+            mq = DQS(path=q, granularity=granularity)
 
-        msg = build_msg(args, timestamp, args.service, args.hostname, \
-                        args.testname, args.status, nagioshost)
-        mq.add_message(msg)
+            msg = build_msg(args, timestamp, args.service, args.hostname, \
+                            args.testname, args.status, nagioshost)
+            mq.add_message(msg)
 
     except MessageError as e:
         logger.error('Error constructing alarm - %s', repr(e))

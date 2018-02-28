@@ -52,7 +52,7 @@ def main():
     timestamp = datetime.datetime.now(tz).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     parser.add_argument('--servicestatetype', required=True, type=str)
-    parser.add_argument('--queue', required=True, type=str)
+    parser.add_argument('--queue', required=True, nargs='+')
 
     # msg headers
     parser.add_argument('--service', required=True, type=str)
@@ -73,20 +73,21 @@ def main():
 
     if 'HARD' in args.servicestatetype:
         try:
-            granularity = config.get_queue_granul(args.queue)
-            mq = DQS(path=args.queue, granularity=granularity)
+            for q in args.queue:
+                granularity = config.get_queue_granul(q)
+                mq = DQS(path=q, granularity=granularity)
 
-            if ',' in args.service:
-                services = args.service.split(',')
-                services = [s.strip() for s in services]
-                for service in services:
-                    msg = build_msg(args, timestamp, service, args.hostname, \
+                if ',' in args.service:
+                    services = args.service.split(',')
+                    services = [s.strip() for s in services]
+                    for service in services:
+                        msg = build_msg(args, timestamp, service, args.hostname, \
+                                        args.metric, args.status, nagioshost)
+                        mq.add_message(msg)
+                else:
+                    msg = build_msg(args, timestamp, args.service, args.hostname, \
                                     args.metric, args.status, nagioshost)
                     mq.add_message(msg)
-            else:
-                msg = build_msg(args, timestamp, args.service, args.hostname, \
-                                args.metric, args.status, nagioshost)
-                mq.add_message(msg)
 
         except MessageError as e:
             logger.error('Error constructing metric - %s', repr(e))
