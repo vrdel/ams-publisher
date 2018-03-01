@@ -145,7 +145,10 @@ class MessagingPublisherMetrics(MessagingPublisher):
 
             date_fmt = '%Y-%m-%dT%H:%M:%SZ'
             part_date_fmt = '%Y-%m-%d'
-            d = datetime.datetime.strptime(timestamp, date_fmt)
+            if timestamp:
+                d = datetime.datetime.strptime(timestamp, date_fmt)
+            else:
+                d = datetime.datetime.now()
 
             return d.strftime(part_date_fmt)
 
@@ -160,8 +163,9 @@ class MessagingPublisherMetrics(MessagingPublisher):
         plainmsg = dict()
         plainmsg.update(msg.header)
         plainmsg.update(self.body2dict(msg.body))
+        timestamp = plainmsg.get('timestamp', None)
 
-        return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
+        return _part_date(timestamp), _avro_serialize(plainmsg)
 
     def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
