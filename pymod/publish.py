@@ -114,6 +114,7 @@ class MessagingPublisher(Publish):
                                     raise e
                                 if self.events['usr1-'+self.name].is_set():
                                     self.stats()
+                                    self.events['usr1-'+self.name].clear()
                                 time.sleep(self.shared.runtime['evsleep'])
                                 i += 1
                             else:
