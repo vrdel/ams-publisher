@@ -85,7 +85,6 @@ def parse_config(logger=None):
             for k, v in queues.iteritems():
                 if k not in topics:
                     raise ConfigParser.NoSectionError('No topic topic_%s defined' % k)
-                    raise SystemExit(1)
 
                 if topics[k]['bulk'] < queues[k]['rate'] and \
                         queues[k]['rate'] % topics[k]['bulk']:
@@ -108,7 +107,6 @@ def parse_config(logger=None):
                 else:
                     sys.stderr.write('Only one enabled publisher allowed at a time')
                 raise SystemExit(1)
-
 
             confopts['queues'] = queues
             confopts['topics'] = topics
