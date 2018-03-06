@@ -20,3 +20,29 @@ Some of the main features are:
 - configurable bulk of messages sent to ARGO Messaging system
 - purger that will keep queue only with sound data
 - message rate inspection of each worker for monitoring purposes 
+
+## Installation
+
+RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
+
+	yum install -y argo-nagios-ams-publisher
+
+For its functioning, component depends on:
+- `argo-ams-library` - interaction with ARGO Messaging 
+- `avro` - avro serialization of messages' payload
+- `python-argparse` - ease build and parse of command line arguments
+- `python-daemon` - ease daemonizing of component 
+- `python-messaging` - CERN's library for directory based caching/queueing 
+- `pytz` - timezone manipulation
+
+
+| File Types       | Destination                                        |
+|------------------|----------------------------------------------------|
+| Configuration    | `/etc/argo-nagios-ams-publisher/`                  |
+| Daemon component | `/usr/bin/ams-publisherd`                          |
+| Cache delivery   | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
+| Init script      | `/etc/init.d/ams-publisher`                        |
+| Local caches     | `/var/spool/argo-nagios-ams-publisher/`            |
+| Log files        | `/var/log/argo-nagios-ams-publisher/`              |
+
+
