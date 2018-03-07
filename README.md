@@ -38,11 +38,12 @@ For its functioning, component depends on:
 
 | File Types       | Destination                                        |
 |------------------|----------------------------------------------------|
-| Configuration    | `/etc/argo-nagios-ams-publisher/`                  |
+| Configuration    | `/etc/argo-nagios-ams-publisher/ams-publisher.conf`|
 | Daemon component | `/usr/bin/ams-publisherd`                          |
 | Cache delivery   | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
 | Init script      | `/etc/init.d/ams-publisher`                        |
 | Local caches     | `/var/spool/argo-nagios-ams-publisher/`            |
+| Inspection socket| `/var/run/argo-nagios-ams-publisher/sock`          |
 | Log files        | `/var/log/argo-nagios-ams-publisher/`              |
 
-
+## Configuration
