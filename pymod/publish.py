@@ -99,8 +99,6 @@ class MessagingPublisher(Publish):
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
-        self.shared.log.error(self.shared.topic['avro'])
-        self.shared.log.error(self.name)
         if self.shared.topic['avro']:
             m = _avro_serialize(plainmsg)
         else:
