@@ -65,7 +65,7 @@ def parse_config(logger=None):
                     qname = section.split('_', 1)[1].lower()
                     dirqopts['directory'] = config.get(section, 'Directory')
                     dirqopts['rate'] = int(config.get(section, 'Rate'))
-                    dirqopts['purge'] = bool(config.get(section, 'Purge'))
+                    dirqopts['purge'] = eval(config.get(section, 'Purge'))
                     dirqopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
                     dirqopts['maxtemp'] = int(config.get(section, 'MaxTemp'))
                     dirqopts['maxlock'] = int(config.get(section, 'MaxLock'))
@@ -75,17 +75,17 @@ def parse_config(logger=None):
                     topts = dict()
                     tname = section.split('_', 1)[1].lower()
                     topts['host'] = config.get(section, 'Host')
-                    topts['type'] = config.get(section, 'Type')
+                    topts['msgtype'] = config.get(section, 'MsgType')
                     topts['key'] = config.get(section, 'Key')
                     topts['project'] = config.get(section, 'Project')
                     topts['topic'] = config.get(section, 'Topic')
                     topts['bulk'] = int(config.get(section, 'BulkSize'))
+                    topts['avro'] = eval(config.get(section, 'Avro'))
                     topics[tname] = topts
 
             for k, v in queues.iteritems():
                 if k not in topics:
                     raise ConfigParser.NoSectionError('No topic topic_%s defined' % k)
-                    raise SystemExit(1)
 
                 if topics[k]['bulk'] < queues[k]['rate'] and \
                         queues[k]['rate'] % topics[k]['bulk']:
@@ -108,7 +108,6 @@ def parse_config(logger=None):
                 else:
                     sys.stderr.write('Only one enabled publisher allowed at a time')
                 raise SystemExit(1)
-
 
             confopts['queues'] = queues
             confopts['topics'] = topics

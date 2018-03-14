@@ -57,8 +57,8 @@ class FilePublisher(Publish):
 
 class MessagingPublisher(Publish):
     """
-       Base MessagingPublisher class that dispatch messages formed in
-       subclasses to ARGO Messaging service.
+       MessagingPublisher class that dispatch messages to ARGO Messaging
+       service.
     """
     def __init__(self, events, worker=None):
         self.shared = Shared(worker=worker)
@@ -70,6 +70,41 @@ class MessagingPublisher(Publish):
                                         project=self.shared.topic['project'])
         self.name = worker
         self.events = events
+        self.schema = self.shared.runtime['schema']
+
+    def construct_msg(self, msg):
+        def _part_date(timestamp):
+            import datetime
+
+            date_fmt = '%Y-%m-%dT%H:%M:%SZ'
+            part_date_fmt = '%Y-%m-%d'
+            if timestamp:
+                d = datetime.datetime.strptime(timestamp, date_fmt)
+            else:
+                d = datetime.datetime.now()
+
+            return d.strftime(part_date_fmt)
+
+        def _avro_serialize(msg):
+            avro_writer = DatumWriter(self.schema)
+            bytesio = BytesIO()
+            encoder = BinaryEncoder(bytesio)
+            avro_writer.write(msg, encoder)
+
+            return bytesio.getvalue()
+
+        plainmsg = dict()
+        plainmsg.update(msg.header)
+        plainmsg.update(self.body2dict(msg.body))
+        timestamp = plainmsg.get('timestamp', None)
+
+        m = None
+        if self.shared.topic['avro']:
+            m = _avro_serialize(plainmsg)
+        else:
+            m = json.dumps(plainmsg)
+
+        return _part_date(timestamp), m
 
     def body2dict(self, body):
         d = dict()
@@ -114,6 +149,7 @@ class MessagingPublisher(Publish):
                                     raise e
                                 if self.events['usr1-'+self.name].is_set():
                                     self.stats()
+                                    self.events['usr1-'+self.name].clear()
                                 time.sleep(self.shared.runtime['evsleep'])
                                 i += 1
                             else:
@@ -130,62 +166,9 @@ class MessagingPublisher(Publish):
 
         return True, published
 
-class MessagingPublisherMetrics(MessagingPublisher):
-    """
-       MessagingPublisher type of class that forms the metric results messages,
-       avro serialize them and send them to ARGO Messaging service
-    """
-    def __init__(self, events, worker=None):
-        super(MessagingPublisherMetrics, self).__init__(events, worker)
-        self.schema = self.shared.runtime['schema']
-
-    def construct_msg(self, msg):
-        def _part_date(timestamp):
-            import datetime
-
-            date_fmt = '%Y-%m-%dT%H:%M:%SZ'
-            part_date_fmt = '%Y-%m-%d'
-            d = datetime.datetime.strptime(timestamp, date_fmt)
-
-            return d.strftime(part_date_fmt)
-
-        def _avro_serialize(msg):
-            avro_writer = DatumWriter(self.schema)
-            bytesio = BytesIO()
-            encoder = BinaryEncoder(bytesio)
-            avro_writer.write(msg, encoder)
-
-            return bytesio.getvalue()
-
-        plainmsg = dict()
-        plainmsg.update(msg.header)
-        plainmsg.update(self.body2dict(msg.body))
-
-        return _part_date(plainmsg['timestamp']), _avro_serialize(plainmsg)
-
     def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
         msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
-                                                    'type': 'metric_data'},
+                                                    'type': self.shared.topic['msgtype']},
                                         data=m[1]), msgs)
-        return self._write(msgs)
-
-class MessagingPublisherAlarms(MessagingPublisher):
-    """
-       MessagingPublisher type of class that forms the messages for
-       alarms/notifications and send them to ARGO Messaging service
-    """
-    def __init__(self, events, worker=None):
-        super(MessagingPublisherAlarms, self).__init__(events, worker)
-
-    def construct_msg(self, msg):
-        d = self.body2dict(msg.body)
-        d.update(msg.header)
-
-        return json.dumps(d)
-
-    def write(self):
-        msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-        msgs = map(lambda m: AmsMessage(attributes={'type': 'alarm'},
-                                        data=m), msgs)
         return self._write(msgs)

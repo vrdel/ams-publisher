@@ -2,7 +2,7 @@ import avro.schema
 import datetime
 import time
 
-from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisherMetrics, MessagingPublisherAlarms
+from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
@@ -42,10 +42,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
                 shared.log.error(e)
                 raise SystemExit(1)
 
-            if shared.topic['type'] == 'metric':
-                shared.runtime.update(publisher=MessagingPublisherMetrics)
-            elif shared.topic['type'] == 'alarm':
-                shared.runtime.update(publisher=MessagingPublisherAlarms)
+            shared.runtime.update(publisher=MessagingPublisher)
 
         localevents.update({'lck-'+w: Lock()})
         localevents.update({'usr1-'+w: Event()})
