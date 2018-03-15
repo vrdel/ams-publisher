@@ -1,9 +1,9 @@
 [Unit]
-Description=Argo Messaging Service metric results publisher
+Description=AMS publisher 
 After=network.target
 
 [Service]
-Type=forking
+Type=simple
 ExecStart=/usr/bin/ams-publisherd -d start 
 ExecStop=/usr/bin/ams-publisherd -d stop 
 
