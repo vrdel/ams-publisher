@@ -1,0 +1,11 @@
+[Unit]
+Description=Argo Messaging Service metric results publisher
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/ams-publisherd -d start 
+ExecStop=/usr/bin/ams-publisherd -d stop 
+
+[Install]
+WantedBy=multi−user.target
