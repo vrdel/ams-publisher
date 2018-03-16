@@ -66,27 +66,37 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %dir %{_localstatedir}/spool/%{name}/alarms/
 
 %post
+%if 0%{?el7:1}
+%systemd_post ams-publisher.service
+%else
 /sbin/chkconfig --add ams-publisher 
 if [ "$1" = 2 ]; then
   /sbin/service ams-publisher stop > /dev/null 2>&1
 fi
+%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %preun
 if [ "$1" = 0 ]; then
+%if 0%{?el7:1}
+%systemd_preun ams-publisher.service
+%else
   /sbin/service ams-publisher stop > /dev/null 2>&1
   /sbin/chkconfig --del ams-publisher 
+%endif
 fi
 exit 0
 
 %postun
+%if 0%{?el7:1}
+%systemd_postun_with_restart ams-publisher.service
+%endif 
 if [ "$1" = 0 ]; then
   rm -rf %{_localstatedir}/run/%{name}/
 fi
 exit 0
-
 
 %pre
 if ! /usr/bin/id nagios &>/dev/null; then
