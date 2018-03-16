@@ -45,7 +45,6 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
                     confopts['general'].update({'statsocket': config.get(section, 'StatSocket')})
-                    confopts['general'].update({'msgavroschema': config.get(section, 'MsgAvroSchema')})
                     confopts['general'].update({'timezone': config.get(section, 'TimeZone')})
                     try:
                         tz = timezone(confopts['general']['timezone'])
@@ -56,16 +55,12 @@ def parse_config(logger=None):
                         else:
                             sys.stderr.write('Unknown timezone defined: {0}\n'.format(str(e)))
                             raise SystemExit(1)
-                if section.startswith('Connection'):
-                    confopts['connection'] = ({'retry': int(config.get(section, 'Retry'))})
-                    confopts['connection'].update({'timeout': int(config.get(section, 'Timeout'))})
-                    confopts['connection'].update({'sleepretry': int(config.get(section, 'SleepRetry'))})
                 if section.startswith('Queue_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
                     dirqopts['directory'] = config.get(section, 'Directory')
                     dirqopts['rate'] = int(config.get(section, 'Rate'))
-                    dirqopts['purge'] = eval(config.get(section, 'Purge'))
+                    dirqopts['purge'] = eval(config.get(section, 'Purge').strip())
                     dirqopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
                     dirqopts['maxtemp'] = int(config.get(section, 'MaxTemp'))
                     dirqopts['maxlock'] = int(config.get(section, 'MaxLock'))
@@ -80,7 +75,12 @@ def parse_config(logger=None):
                     topts['project'] = config.get(section, 'Project')
                     topts['topic'] = config.get(section, 'Topic')
                     topts['bulk'] = int(config.get(section, 'BulkSize'))
-                    topts['avro'] = eval(config.get(section, 'Avro'))
+                    topts['avro'] = eval(config.get(section, 'Avro').strip())
+                    if topts['avro']:
+                        topts['avroschema'] = config.get(section, 'AvroSchema')
+                    topts['retry'] = int(config.get(section, 'Retry'))
+                    topts['timeout'] = int(config.get(section, 'Timeout'))
+                    topts['sleepretry'] = int(config.get(section, 'SleepRetry'))
                     topics[tname] = topts
 
             for k, v in queues.iteritems():
@@ -93,6 +93,13 @@ def parse_config(logger=None):
                         logger.error('queue_%s: Rate should be multiple of BulkSize' % k)
                     else:
                         sys.stderr.write('queue_%s: Rate should be multiple of BulkSize\n' % k)
+                    raise SystemExit(1)
+
+                if topics[k]['avro'] and not topics[k].get('avroschema', None):
+                    if logger:
+                        logger.error('topic_%s: AvroSchema not defined' % k)
+                    else:
+                        sys.stderr.write('topic_%s: AvroSchema not defined\n' % k)
                     raise SystemExit(1)
 
             if all([confopts['general']['publishmsgfile'] == False, confopts['general']['publishargomessaging'] == False]):

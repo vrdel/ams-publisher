@@ -70,7 +70,6 @@ class MessagingPublisher(Publish):
                                         project=self.shared.topic['project'])
         self.name = worker
         self.events = events
-        self.schema = self.shared.runtime['schema']
 
     def construct_msg(self, msg):
         def _part_date(timestamp):
@@ -86,7 +85,7 @@ class MessagingPublisher(Publish):
             return d.strftime(part_date_fmt)
 
         def _avro_serialize(msg):
-            avro_writer = DatumWriter(self.schema)
+            avro_writer = DatumWriter(self.shared.topic['schema'])
             bytesio = BytesIO()
             encoder = BinaryEncoder(bytesio)
             avro_writer.write(msg, encoder)
@@ -124,10 +123,10 @@ class MessagingPublisher(Publish):
         published = set()
         for i in range(self.pubnumloop):
             try:
-                while t <= self.shared.connection['retry']:
+                while t <= self.shared.topic['retry']:
                     try:
                         lck.acquire(False)
-                        self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.connection['timeout'])
+                        self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.topic['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self.shared.stats['published'] += self.shared.topic['bulk']
                         self._increm_intervalcounters(self.shared.topic['bulk'])
@@ -137,10 +136,10 @@ class MessagingPublisher(Publish):
                     except (AmsServiceException, AmsConnectionException)  as e:
                         self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
-                        if t == self.shared.connection['retry']:
+                        if t == self.shared.topic['retry']:
                             raise e
                         else:
-                            s = self.shared.connection['sleepretry']
+                            s = self.shared.topic['sleepretry']
                             n = s/self.shared.runtime['evsleep']
                             i = 0
                             while i < n:

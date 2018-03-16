@@ -18,8 +18,6 @@ class Shared(object):
                 self._topics = confopts['topics']
             if not getattr(self, 'general', False):
                 self.general = confopts['general']
-            if not getattr(self, 'connection', False):
-                self.connection = confopts['connection']
             if not getattr(self, '_stats', False):
                 self._stats = dict()
                 self.statint = dict()
@@ -47,7 +45,14 @@ class Shared(object):
         self.log = logger
 
     def get_nmsg_interval(self, worker, what, interval):
-        return self.statint[worker][what][interval]
+        n = None
+
+        try:
+            n = self.statint[worker][what][interval]
+        except KeyError as e:
+            n = 'error'
+
+        return n
 
     def event(self, name):
         return self.events.get(name)
