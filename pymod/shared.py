@@ -18,8 +18,6 @@ class Shared(object):
                 self._topics = confopts['topics']
             if not getattr(self, 'general', False):
                 self.general = confopts['general']
-            if not getattr(self, 'connection', False):
-                self.connection = confopts['connection']
             if not getattr(self, '_stats', False):
                 self._stats = dict()
                 self.statint = dict()

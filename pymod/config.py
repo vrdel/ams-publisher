@@ -56,10 +56,6 @@ def parse_config(logger=None):
                         else:
                             sys.stderr.write('Unknown timezone defined: {0}\n'.format(str(e)))
                             raise SystemExit(1)
-                if section.startswith('Connection'):
-                    confopts['connection'] = ({'retry': int(config.get(section, 'Retry'))})
-                    confopts['connection'].update({'timeout': int(config.get(section, 'Timeout'))})
-                    confopts['connection'].update({'sleepretry': int(config.get(section, 'SleepRetry'))})
                 if section.startswith('Queue_'):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
@@ -81,6 +77,9 @@ def parse_config(logger=None):
                     topts['topic'] = config.get(section, 'Topic')
                     topts['bulk'] = int(config.get(section, 'BulkSize'))
                     topts['avro'] = eval(config.get(section, 'Avro'))
+                    topts['retry'] = int(config.get(section, 'Retry'))
+                    topts['timeout'] = int(config.get(section, 'Timeout'))
+                    topts['sleepretry'] = int(config.get(section, 'SleepRetry'))
                     topics[tname] = topts
 
             for k, v in queues.iteritems():
