@@ -47,7 +47,14 @@ class Shared(object):
         self.log = logger
 
     def get_nmsg_interval(self, worker, what, interval):
-        return self.statint[worker][what][interval]
+        n = None
+
+        try:
+            n = self.statint[worker][what][interval]
+        except KeyError as e:
+            n = 'error'
+
+        return n
 
     def event(self, name):
         return self.events.get(name)
