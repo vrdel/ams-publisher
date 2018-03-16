@@ -70,7 +70,6 @@ class MessagingPublisher(Publish):
                                         project=self.shared.topic['project'])
         self.name = worker
         self.events = events
-        self.schema = self.shared.runtime['schema']
 
     def construct_msg(self, msg):
         def _part_date(timestamp):
@@ -86,7 +85,7 @@ class MessagingPublisher(Publish):
             return d.strftime(part_date_fmt)
 
         def _avro_serialize(msg):
-            avro_writer = DatumWriter(self.schema)
+            avro_writer = DatumWriter(self.shared.topic['schema'])
             bytesio = BytesIO()
             encoder = BinaryEncoder(bytesio)
             avro_writer.write(msg, encoder)

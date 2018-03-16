@@ -36,8 +36,9 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         if shared.general['publishargomessaging']:
             try:
-                avsc = open(shared.general['msgavroschema'])
-                shared.runtime.update(schema=avro.schema.parse(avsc.read()))
+                if shared.topic['avro']:
+                    avsc = open(shared.topic['avroschema'])
+                    shared.topic.update(schema=avro.schema.parse(avsc.read()))
             except Exception as e:
                 shared.log.error(e)
                 raise SystemExit(1)
