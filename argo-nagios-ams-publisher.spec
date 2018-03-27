@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.2.1
+Version:        0.3.0
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -109,6 +109,14 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Tue Mar 27 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.3.0-1%{?dist}
+- ARGO-1084 Connection settings per topic publisher
+- ARGO-1023 Send messages to prod and devel AMS instance in parallel
+- ARGO-1055 Last time stats report not updated
+- ARGO-1051 Ensure service stop called on system shutdown
+- ARGO-1004 UTC timestamp instead of localtime for dispatched results
+- ARGO-978 Add systemd init script
+- ARGO-806 AMS Publisher nagios testing method for upcoming probe
 * Wed Dec 20 2017 Daniel Vrcic <dvrcic@srce.hr> - 0.2.1-1%{?dist}
 - Centos 7 code fixes and spec update
 - ARGO-930 Service stop should not depend on successful config parse
