@@ -38,6 +38,7 @@ def construct_msg(session, bodysize, timezone):
         msg.body += 'summary: %s\n' % generator.rndb64(20)
         msg.body += 'message: %s\n' % generator.rndb64(bodysize)
         msg.body += 'vofqan: %s\n' % generator.rndb64(10)
+        msg.body += 'actual_data: %s\n' % generator.rndb64(10)
         msg.body += 'voname: %s\n' % generator.rndb64(3)
         msg.body += 'roc: %s\n' % generator.rndb64(3)
 
