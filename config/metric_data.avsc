@@ -8,6 +8,7 @@
         {"name": "metric", "type": "string"},
         {"name": "status", "type": "string"},
         {"name": "monitoring_host", "type": ["null", "string"]},
+        {"name": "actual_data", "type": ["null", "string"]},
         {"name": "summary", "type": ["null", "string"]},
         {"name": "message", "type": ["null", "string"]},
         {"name": "tags", "type" : ["null", {"name" : "Tags",
