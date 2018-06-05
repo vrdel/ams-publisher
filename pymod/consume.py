@@ -37,12 +37,12 @@ class ConsumerQueue(StatSig, Process):
                                    filepublisher=False)
         self.publisher = self.shared.runtime['publisher'](events, worker=worker)
         self.purger = Purger(events, worker=worker)
+        self.prevstattime = int(time.time())
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
 
     def run(self):
-        self.prevstattime = int(time.time())
         termev = self.events['term-'+self.name]
         usr1ev = self.events['usr1-'+self.name]
         lck = self.events['lck-'+self.name]
@@ -138,7 +138,9 @@ class ConsumerQueue(StatSig, Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.unlock(m[0] if not isinstance(m, str) else m)
+                msg = m[0] if not isinstance(m, str) else m
+                if os.path.exists('{0}/{1}'.format(self.dirq.path, msg)):
+                    self.dirq.unlock(msg)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.shared.log.error(e)
@@ -147,8 +149,9 @@ class ConsumerQueue(StatSig, Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.remove(m[0] if not isinstance(m, str) else m)
+                msg = m[0] if not isinstance(m, str) else m
+                if os.path.exists('{0}/{1}'.format(self.dirq.path, msg)):
+                    self.dirq.remove(msg)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.shared.log.error(e)
-
