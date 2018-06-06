@@ -35,7 +35,7 @@ def build_msg(args, *headers):
     msg.header.update({'status': status.encode('utf-8')})
     msg.header.update({'monitoring_host': nagioshost.encode('utf-8')})
 
-    for bs in ['summary', 'message', 'vofqan', 'voname', 'roc']:
+    for bs in ['summary', 'message', 'vofqan', 'voname', 'roc', 'actual_data']:
         code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
@@ -61,11 +61,12 @@ def main():
     parser.add_argument('--status', required=True, type=str)
 
     # msg body
-    parser.add_argument('--summary', required=False, type=str)
+    parser.add_argument('--actual_data', required=False, type=str)
     parser.add_argument('--message', required=False, type=str)
+    parser.add_argument('--roc', required=False, type=str)
+    parser.add_argument('--summary', required=False, type=str)
     parser.add_argument('--vofqan', required=False, type=str)
     parser.add_argument('--voname', required=False, type=str)
-    parser.add_argument('--roc', required=False, type=str)
 
     args = parser.parse_args()
 
