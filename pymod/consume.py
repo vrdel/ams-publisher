@@ -37,7 +37,6 @@ class ConsumerQueue(StatSig, Process):
                                    filepublisher=False)
         self.publisher = self.shared.runtime['publisher'](events, worker=worker)
         self.purger = Purger(events, worker=worker)
-        self.prevstattime = int(time.time())
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
@@ -89,11 +88,6 @@ class ConsumerQueue(StatSig, Process):
                         evgup.set()
                         raise SystemExit(0)
 
-                if int(time.time()) - self.prevstattime >= self.shared.general['statseveryhour'] * 3600:
-                    self.stat_reset()
-                    self.publisher.stat_reset()
-                    self.prevstattime = int(time.time())
-
                 time.sleep(decimal.Decimal(1) / decimal.Decimal(self.shared.queue['rate']))
 
             except KeyboardInterrupt:
@@ -107,7 +101,6 @@ class ConsumerQueue(StatSig, Process):
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
             self.inmemq.append(elem)
-            self.shared.stats['consumed'] += 1
             self._increm_intervalcounters(1)
             self.sess_consumed += 1
             if num and self.sess_consumed == num:

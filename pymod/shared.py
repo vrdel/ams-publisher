@@ -18,21 +18,15 @@ class Shared(object):
                 self._topics = confopts['topics']
             if not getattr(self, 'general', False):
                 self.general = confopts['general']
-            if not getattr(self, '_stats', False):
-                self._stats = dict()
+            if not getattr(self, 'statint', False):
                 self.statint = dict()
             self.workers = self._queues.keys()
         if worker:
             self.worker = worker
             self.queue = self._queues[worker]
             self.topic = self._topics[worker]
-            if worker not in self._stats:
-                self._stats[worker] = dict(published=0)
-                self._stats[worker].update(dict(consumed=0))
             if worker not in self.statint:
                 self.statint[worker] = dict(published=None, consumed=None)
-            self.stats = self._stats[worker]
-
 
     def add_event(self, name, ev):
         if not getattr(self, 'events', False):
@@ -44,7 +38,7 @@ class Shared(object):
             self.log= None
         self.log = logger
 
-    def get_nmsg_interval(self, worker, what, interval):
+    def get_nmsg(self, worker, what, interval):
         n = None
 
         try:

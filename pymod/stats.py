@@ -26,7 +26,8 @@ class StatSig(object):
         self._reset()
 
     def _stat_msg(self, hours):
-        nmsg = self.shared.stats['published'] if self._iam_publisher() else self.shared.stats['consumed']
+        what = 'published' if self._iam_publisher() else 'consumed'
+        nmsg = self.shared.get_nmsg(self.name, what, 7)
         self.shared.log.info('{0} {1}: {2} {3} msgs in {4:0.2f} hours'.format(self.__class__.__name__,
                                                                               self.name,
                                                                               self.msgdo,
@@ -35,9 +36,9 @@ class StatSig(object):
 
     def _reset(self):
         if self._iam_publisher():
-            self.shared.stats['published'] = 0
+            self.shared.statint[self.name]['published'][7] = 0
         else:
-            self.shared.stats['consumed'] = 0
+            self.shared.statint[self.name]['consumed'][7] = 0
 
     def _iam_publisher(self):
         return bool('Publish' in self.__class__.__name__)
@@ -109,7 +110,7 @@ class StatSock(Process):
         self.shared = Shared()
         self.sock = sock
         self._int2idx = {'15': 0, '30': 1, '60': 2, '180': 3, '360': 4,
-                         '720': 5, '1440': 6}
+                         '720': 5, '1440': 6, 'gen': 7}
         self.resetth = Reset(events=events, map=self._int2idx)
 
         try:
@@ -150,7 +151,7 @@ class StatSock(Process):
         a = ''
         for q in query:
             if q[1] != 'error':
-                r = self.shared.get_nmsg_interval(q[0], q[1], q[2])
+                r = self.shared.get_nmsg(q[0], q[1], q[2])
                 a += 'w:%s+r:%s ' % (str(q[0]), str(r))
             else:
                 a += 'w:%s+r:error ' % str(q[0])

@@ -128,7 +128,6 @@ class MessagingPublisher(Publish):
                         lck.acquire(False)
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.topic['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-                        self.shared.stats['published'] += self.shared.topic['bulk']
                         self._increm_intervalcounters(self.shared.topic['bulk'])
                         self.inmemq.rotate(-self.shared.topic['bulk'])
                         break

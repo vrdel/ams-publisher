@@ -25,8 +25,12 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
     for w in workers:
         shared = Shared(worker=w)
-        shared.statint[w]['published'] = Array('i', 7)
-        shared.statint[w]['consumed'] = Array('i', 7)
+        # Create arrays of integers that will be shared across spawned processes
+        # and that will keep track of number of published and consumed messages
+        # in 15, 30, 60, 180, 360, 720 and 1440 minutes. Last integer will be
+        # used for periodic reports.
+        shared.statint[w]['published'] = Array('i', 8)
+        shared.statint[w]['consumed'] = Array('i', 8)
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
             shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -68,7 +72,15 @@ def init_dirq_consume(workers, daemonized, sockstat):
         statsp.daemon = False
         statsp.start()
 
+    prevstattime = int(time.time())
     while True:
+        if int(time.time()) - prevstattime >= shared.general['statseveryhour']:
+            shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
+            for c in consumers:
+                c.stat_reset()
+                c.publisher.stat_reset()
+                prevstattime = int(time.time())
+
         for c in consumers:
             if localevents['giveup-'+c.name].is_set():
                 c.terminate()
