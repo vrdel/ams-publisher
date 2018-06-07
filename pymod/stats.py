@@ -1,10 +1,11 @@
-import socket
-import select
-import os
-import time
-import re
 import copy
+import decimal
 import errno
+import os
+import re
+import select
+import socket
+import time
 
 from threading import Thread
 from multiprocessing import Process
@@ -47,8 +48,8 @@ class StatSig(object):
         self.laststattime = int(time.time())
 
     def stats(self):
-        sincelaststat = int(time.time()) - self.laststattime
-        self._stat_msg(sincelaststat/3600)
+        sincelaststat = decimal.Decimal(int(time.time()) - self.laststattime)
+        self._stat_msg(sincelaststat/decimal.Decimal(3600))
 
 
 class Reset(Thread):
