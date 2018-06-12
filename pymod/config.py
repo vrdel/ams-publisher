@@ -59,12 +59,12 @@ def parse_config(logger=None):
                     dirqopts = dict()
                     qname = section.split('_', 1)[1].lower()
                     dirqopts['directory'] = config.get(section, 'Directory')
-                    dirqopts['rate'] = int(config.get(section, 'Rate'))
+                    dirqopts['rate'] = config.getint(section, 'Rate')
                     dirqopts['purge'] = eval(config.get(section, 'Purge').strip())
-                    dirqopts['purgeeverysec'] = int(config.get(section, 'PurgeEverySec'))
-                    dirqopts['maxtemp'] = int(config.get(section, 'MaxTemp'))
-                    dirqopts['maxlock'] = int(config.get(section, 'MaxLock'))
-                    dirqopts['granularity'] = int(config.get(section, 'Granularity'))
+                    dirqopts['purgeeverysec'] = config.getint(section, 'PurgeEverySec')
+                    dirqopts['maxtemp'] = config.getint(section, 'MaxTemp')
+                    dirqopts['maxlock'] = config.getint(section, 'MaxLock')
+                    dirqopts['granularity'] = config.getint(section, 'Granularity')
                     queues[qname] = dirqopts
                 if section.startswith('Topic_'):
                     topts = dict()
@@ -74,13 +74,13 @@ def parse_config(logger=None):
                     topts['key'] = config.get(section, 'Key')
                     topts['project'] = config.get(section, 'Project')
                     topts['topic'] = config.get(section, 'Topic')
-                    topts['bulk'] = int(config.get(section, 'BulkSize'))
+                    topts['bulk'] = config.getint(section, 'BulkSize')
                     topts['avro'] = eval(config.get(section, 'Avro').strip())
                     if topts['avro']:
                         topts['avroschema'] = config.get(section, 'AvroSchema')
-                    topts['retry'] = int(config.get(section, 'Retry'))
-                    topts['timeout'] = int(config.get(section, 'Timeout'))
-                    topts['sleepretry'] = int(config.get(section, 'SleepRetry'))
+                    topts['retry'] = config.getint(section, 'Retry')
+                    topts['timeout'] = config.getint(section, 'Timeout')
+                    topts['sleepretry'] = config.getint(section, 'SleepRetry')
                     topics[tname] = topts
 
             for k, v in queues.iteritems():

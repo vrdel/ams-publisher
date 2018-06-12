@@ -42,7 +42,6 @@ class ConsumerQueue(StatSig, Process):
         self.unlock_dirq_msgs(self.seenmsgs)
 
     def run(self):
-        self.prevstattime = int(time.time())
         termev = self.events['term-'+self.name]
         usr1ev = self.events['usr1-'+self.name]
         lck = self.events['lck-'+self.name]
@@ -89,11 +88,6 @@ class ConsumerQueue(StatSig, Process):
                         evgup.set()
                         raise SystemExit(0)
 
-                if int(time.time()) - self.prevstattime >= self.shared.general['statseveryhour'] * 3600:
-                    self.stat_reset()
-                    self.publisher.stat_reset()
-                    self.prevstattime = int(time.time())
-
                 time.sleep(decimal.Decimal(1) / decimal.Decimal(self.shared.queue['rate']))
 
             except KeyboardInterrupt:
@@ -107,7 +101,6 @@ class ConsumerQueue(StatSig, Process):
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):
             self.inmemq.append(elem)
-            self.shared.stats['consumed'] += 1
             self._increm_intervalcounters(1)
             self.sess_consumed += 1
             if num and self.sess_consumed == num:
@@ -138,7 +131,9 @@ class ConsumerQueue(StatSig, Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.unlock(m[0] if not isinstance(m, str) else m)
+                msg = m[0] if not isinstance(m, str) else m
+                if os.path.exists('{0}/{1}'.format(self.dirq.path, msg)):
+                    self.dirq.unlock(msg)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.shared.log.error(e)
@@ -147,8 +142,9 @@ class ConsumerQueue(StatSig, Process):
         try:
             msgl = msgs if msgs else self.inmemq
             for m in msgl:
-                self.dirq.remove(m[0] if not isinstance(m, str) else m)
+                msg = m[0] if not isinstance(m, str) else m
+                if os.path.exists('{0}/{1}'.format(self.dirq.path, msg)):
+                    self.dirq.remove(msg)
             self.inmemq.clear()
         except (OSError, IOError) as e:
             self.shared.log.error(e)
-
