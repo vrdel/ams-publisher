@@ -74,7 +74,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
     prevstattime = int(time.time())
     while True:
-        if int(time.time()) - prevstattime >= shared.general['statseveryhour']:
+        if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
             for c in consumers:
                 c.stat_reset()
