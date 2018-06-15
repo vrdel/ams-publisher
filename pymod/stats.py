@@ -13,6 +13,7 @@ from argo_nagios_ams_publisher.shared import Shared
 
 maxcmdlength = 128
 
+
 class StatSig(object):
     """
        Class is meant to be subclassed by ConsumerQueue and Publish classes for
@@ -80,7 +81,7 @@ class Reset(Thread):
                 break
             now = int(time.time())
             for k, v in self.last_reset.iteritems():
-                if now - self.last_reset[k] >= int(k) * 60:
+                if int(k) != 0 and now - self.last_reset[k] >= int(k) * 60:
                     for what in ['consumed', 'published']:
                         for w in self.shared.workers:
                             idx = self.map[k]
@@ -110,7 +111,7 @@ class StatSock(Process):
         self.shared = Shared()
         self.sock = sock
         self._int2idx = {'15': 0, '30': 1, '60': 2, '180': 3, '360': 4,
-                         '720': 5, '1440': 6, 'gen': 7}
+                         '720': 5, '1440': 6, '0': 7}
         self.resetth = Reset(events=events, map=self._int2idx)
 
         try:
