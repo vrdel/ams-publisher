@@ -34,7 +34,7 @@ shared = None
 logger = None
 
 
-def setup_statssocket(path):
+def setup_statssocket(path, uid, gid):
     global shared
 
     if os.path.exists(path):
@@ -42,6 +42,7 @@ def setup_statssocket(path):
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(path)
+        os.chown(path, uid, gid)
     except socket.error as e:
         shared.log.error('Error setting up socket: %s - %s' % (path, str(e)))
         raise SystemExit(1)
@@ -81,7 +82,7 @@ def daemon_start(context_daemon, restart=False):
     context_daemon.uid = uid
     context_daemon.gid = gid
     os.chown(shared.log.fileloghandle.name, uid, gid)
-    sock = setup_statssocket(shared.general['statsocket'])
+    sock = setup_statssocket(shared.general['statsocket'], uid, gid)
     context_daemon.files_preserve = [shared.log.fileloghandle, sock.fileno()]
 
     if not restart:
