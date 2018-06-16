@@ -44,6 +44,7 @@ class ConsumerQueue(StatSig, Process):
     def run(self):
         termev = self.events['term-'+self.name]
         usr1ev = self.events['usr1-'+self.name]
+        periodev = self.events['period-'+self.name]
         lck = self.events['lck-'+self.name]
         evgup = self.events['giveup-'+self.name]
 
@@ -66,6 +67,11 @@ class ConsumerQueue(StatSig, Process):
                     self.publisher.stats()
                     lck.release()
                     usr1ev.clear()
+
+                if periodev.is_set():
+                    self.stat_reset()
+                    self.publisher.stat_reset()
+                    periodev.clear()
 
                 if self.consume_dirq_msgs(max(self.shared.topic['bulk'],
                                               self.shared.queue['rate'])):

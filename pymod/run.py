@@ -51,6 +51,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         localevents.update({'lck-'+w: Lock()})
         localevents.update({'usr1-'+w: Event()})
+        localevents.update({'period-'+w: Event()})
         localevents.update({'term-'+w: Event()})
         localevents.update({'termth-'+w: ThreadEvent()})
         localevents.update({'giveup-'+w: Event()})
@@ -77,8 +78,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
         if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
             for c in consumers:
-                c.stat_reset()
-                c.publisher.stat_reset()
+                localevents['period-'+c.name].set()
                 prevstattime = int(time.time())
 
         for c in consumers:
