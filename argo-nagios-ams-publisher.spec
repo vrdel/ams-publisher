@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -109,6 +109,10 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Tue Jun 19 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.3.1-1%{?dist}
+- ARGO-1250 Inspection local socket is left with root permissions 
+- ARGO-1147 AMS publisher to add optional field
+- ARGO-986 Purger should not try to remove non-existing cache msg
 * Tue Mar 27 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.3.0-1%{?dist}
 - ARGO-1084 Connection settings per topic publisher
 - ARGO-1023 Send messages to prod and devel AMS instance in parallel
