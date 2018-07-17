@@ -51,7 +51,6 @@ rm -rf $RPM_BUILD_ROOT
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metricsdevel/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 
@@ -63,8 +62,8 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %attr(0755,nagios,nagios) %dir %{_localstatedir}/run/%{name}/
+%dir %{_localstatedir}/spool/%{name}/
 %dir %{_localstatedir}/spool/%{name}/metrics/
-%dir %{_localstatedir}/spool/%{name}/metricsdevel/
 %dir %{_localstatedir}/spool/%{name}/alarms/
 
 %post
