@@ -203,7 +203,8 @@ def main():
         try:
             confopts = parse_config()
             shared = Shared(confopts=confopts)
-            sock = setup_statssocket(shared.general['statsocket'])
+            uid, gid = get_userids(shared.general['runasuser'])
+            sock = setup_statssocket(shared.general['statsocket'], uid, gid)
             init_dirq_consume(shared.workers, daemonized=False, sockstat=sock)
         except KeyboardInterrupt:
             raise SystemExit(1)
