@@ -62,8 +62,7 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %attr(0755,nagios,nagios) %dir %{_localstatedir}/run/%{name}/
-%dir %{_localstatedir}/spool/%{name}/metrics/
-%dir %{_localstatedir}/spool/%{name}/alarms/
+%dir %{_localstatedir}/spool/%{name}/
 
 %post
 %if 0%{?el7:1}
