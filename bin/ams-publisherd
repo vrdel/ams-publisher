@@ -53,10 +53,6 @@ def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
 def daemon_start(context_daemon, restart=False):
-    global shared
-    confopts = parse_config(shared.log)
-    shared = Shared(confopts=confopts)
-
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
@@ -210,6 +206,8 @@ def main():
             raise SystemExit(1)
 
     elif args.daemon:
+        confopts = parse_config(shared.log)
+        shared = Shared(confopts=confopts)
         daemonizer(args)
 
 main()
