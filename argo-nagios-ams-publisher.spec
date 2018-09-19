@@ -82,8 +82,8 @@ if [ "$1" = 0 ]; then
 %if 0%{?el7:1}
 %systemd_preun ams-publisher.service
 %else
-  /sbin/service ams-publisher stop > /dev/null 2>&1
-  /sbin/chkconfig --del ams-publisher 
+	/sbin/service ams-publisher stop > /dev/null 2>&1
+	/sbin/chkconfig --del ams-publisher 
 %endif
 fi
 exit 0
@@ -93,17 +93,17 @@ exit 0
 %systemd_postun_with_restart ams-publisher.service
 %endif 
 if [ "$1" = 0 ]; then
-  rm -rf %{_localstatedir}/run/%{name}/
+	test -d  %{_localstatedir}/run/%{name}/ && rm -rf %{_localstatedir}/run/%{name}/
 fi
 exit 0
 
 %pre
 if ! /usr/bin/id nagios &>/dev/null; then
-    /usr/sbin/useradd -r -m -d /var/log/nagios -s /bin/sh -c "nagios" nagios || \
+	/usr/sbin/useradd -r -m -d /var/log/nagios -s /bin/sh -c "nagios" nagios || \
         logger -t nagios/rpm "Unexpected error adding user \"nagios\". Aborting installation."
 fi
 if ! /usr/bin/getent group nagiocmd &>/dev/null; then
-    /usr/sbin/groupadd nagiocmd &>/dev/null || \
+	/usr/sbin/groupadd nagiocmd &>/dev/null || \
         logger -t nagios/rpm "Unexpected error adding group \"nagiocmd\". Aborting installation."
 fi
 
