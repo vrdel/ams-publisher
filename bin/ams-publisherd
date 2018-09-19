@@ -53,10 +53,6 @@ def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
 def daemon_start(context_daemon, restart=False):
-    global shared
-    confopts = parse_config(shared.log)
-    shared = Shared(confopts=confopts)
-
     if context_daemon.pidfile.is_locked() and not \
             context_daemon.pidfile.i_am_locking():
         pid = context_daemon.pidfile.read_pid()
@@ -93,6 +89,10 @@ def daemon_start(context_daemon, restart=False):
         init_dirq_consume(shared.workers, daemonized=True, sockstat=sock)
 
 def daemon_stop(context_daemon, restart=False):
+    def on_terminate(proc):
+        if not restart:
+            shared.log.info('Stopping (%s)' % proc.pid)
+
     if context_daemon.pidfile.is_locked():
         pid = context_daemon.pidfile.read_pid()
 
@@ -104,10 +104,7 @@ def daemon_stop(context_daemon, restart=False):
                 shared.log.info('Not running - cleaning stale pidfile')
         else:
             process.terminate()
-            pgone, palive = psutil.wait_procs([process])
-
-            if not restart:
-                shared.log.info('Stopping (%s)' % pid)
+            pgone, palive = psutil.wait_procs([process], callback=on_terminate)
 
             for p in palive:
                 p.kill()
@@ -137,11 +134,11 @@ def daemon_status(context_daemon):
 
 def pidfiledir(pidfile):
     try:
-        if not os.path.exists(os.path.dirname(pidfile)):
-            dirp = os.path.dirname(pidfile)
+        dirp = os.path.dirname(pidfile)
+        if not os.path.exists(dirp):
             os.makedirs(dirp)
-            uid, gid = get_userids(shared.general['runasuser'])
-            os.chown(dirp, uid, gid)
+        uid, gid = get_userids(shared.general['runasuser'])
+        os.chown(dirp, uid, gid)
     except (OSError, IOError) as e:
         if e.args[0] != errno.EEXIST:
             shared.log.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
@@ -203,12 +200,15 @@ def main():
         try:
             confopts = parse_config()
             shared = Shared(confopts=confopts)
-            sock = setup_statssocket(shared.general['statsocket'])
+            uid, gid = get_userids(shared.general['runasuser'])
+            sock = setup_statssocket(shared.general['statsocket'], uid, gid)
             init_dirq_consume(shared.workers, daemonized=False, sockstat=sock)
         except KeyboardInterrupt:
             raise SystemExit(1)
 
     elif args.daemon:
+        confopts = parse_config(shared.log)
+        shared = Shared(confopts=confopts)
         daemonizer(args)
 
 main()
