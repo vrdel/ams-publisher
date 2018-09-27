@@ -22,8 +22,10 @@ class Publish(StatSig):
         pass
 
     def _increm_intervalcounters(self, num):
-        for i in range(len(self.shared.statint[self.name]['published'])):
-            self.shared.statint[self.name]['published'][i] += num
+        now = int(time.time())
+        counter = self.shared.statint[self.name]['published']
+        counter[now] = num + counter.get(now, 0)
+        self.shared.statint[self.name]['published_periodic'] += num
 
 class FilePublisher(Publish):
     """

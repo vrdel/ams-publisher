@@ -6,7 +6,7 @@ from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
-from multiprocessing import Event, Lock, Array
+from multiprocessing import Event, Lock, Value, Manager
 from threading import Event as ThreadEvent
 
 def init_dirq_consume(workers, daemonized, sockstat):
@@ -22,18 +22,30 @@ def init_dirq_consume(workers, daemonized, sockstat):
     evsleep = 2
     consumers = list()
     localevents = dict()
+    manager = Manager()
 
     for w in workers:
         shared = Shared(worker=w)
-        # Create arrays of integers that will be shared across spawned processes
-        # and that will keep track of number of published and consumed messages
-        # in 15, 30, 60, 180, 360, 720 and 1440 minutes. Last integer will be
-        # used for periodic reports.
-        shared.statint[w]['published'] = Array('i', 8)
-        shared.statint[w]['consumed'] = Array('i', 8)
+
+        # Create dictionaries that hold number of (published, consumed) messages
+        # in seconds from epoch. Second from epoch is a key and number of
+        # (published, consumed) messages in given second is associated value:
+        #
+        # { int(time.time()): num_of_bulk_msgs, ... }
+        #
+        # Counter is read on queries from socket.
+        shared.statint[w]['consumed'] = manager.dict()
+        shared.statint[w]['published'] = manager.dict()
+
+        # Create integer counters that will be shared across spawned processes
+        # and that will keep track of number of published and consumed messages.
+        # Counter is read on perodic status reports and signal SIGUSR1.
+        shared.statint[w]['consumed_periodic'] = Value('i', 1)
+        shared.statint[w]['published_periodic'] = Value('i', 1)
+
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
-            shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            shared.runtime['started']  = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if shared.general['publishmsgfile']:
             shared.runtime.update(publisher=FilePublisher)

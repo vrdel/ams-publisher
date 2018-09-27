@@ -101,8 +101,10 @@ class ConsumerQueue(StatSig, Process):
                 raise SystemExit(0)
 
     def _increm_intervalcounters(self, num):
-        for i in range(len(self.shared.statint[self.name]['consumed'])):
-            self.shared.statint[self.name]['consumed'][i] += num
+        now = int(time.time())
+        counter = self.shared.statint[self.name]['consumed']
+        counter[now] = num + counter.get(now, 0)
+        self.shared.statint[self.name]['consumed_periodic'] += num
 
     def consume_dirq_msgs(self, num=0):
         def _inmemq_append(elem):

@@ -18,7 +18,8 @@ class StatSig(object):
     """
        Class is meant to be subclassed by ConsumerQueue and Publish classes for
        the purpose of implementing common methods that will be called on SIGUSR1
-       event and write consumed/published statistics for each worker.
+       event and write consumed/published statistics for each worker. Class also
+       implements periodic reports.
     """
     def __init__(self, worker):
         self.laststattime = int(time.time())
@@ -27,8 +28,8 @@ class StatSig(object):
         self._reset()
 
     def _stat_msg(self, hours):
-        what = 'published' if self._iam_publisher() else 'consumed'
-        nmsg = self.shared.get_nmsg(self.name, what, 7)
+        what = 'published_periodic' if self._iam_publisher() else 'consumed_periodic'
+        nmsg = self.shared.statint[self.name][what]
         self.shared.log.info('{0} {1}: {2} {3} msgs in {4:0.2f} hours'.format(self.__class__.__name__,
                                                                               self.name,
                                                                               self.msgdo,
@@ -37,9 +38,9 @@ class StatSig(object):
 
     def _reset(self):
         if self._iam_publisher():
-            self.shared.statint[self.name]['published'][7] = 0
+            self.shared.statint[self.name]['published_periodic'] = 0
         else:
-            self.shared.statint[self.name]['consumed'][7] = 0
+            self.shared.statint[self.name]['consumed_periodic'] = 0
 
     def _iam_publisher(self):
         return bool('Publish' in self.__class__.__name__)
@@ -56,37 +57,34 @@ class StatSig(object):
 
 class Reset(Thread):
     """
-       Reset helper thread that resets counters representing published and
-       consumed number of messages for each worker.
+       Reset helper thread that resets dictionary counter with frequency of
+       messages in second from epoch.
     """
-    def __init__(self, events, map):
+    def __init__(self, events, min_lookback):
         Thread.__init__(self)
         self.events = events
         self.shared = Shared()
-        self.map = map
         if not self.shared.runtime['daemonized']:
             self.daemon = True
-        self.init_lastreset()
+        self.last_reset = int(time.time())
+        self.reset_period = min_lookback * 60
         self.start()
 
-    def init_lastreset(self):
-        self.last_reset = copy.copy(self.map)
-        now = int(time.time())
-        for k, v in self.last_reset.iteritems():
-            self.last_reset[k] = now
+    def reset_counter(self, counter):
+        for e in range(self.now, self.now - self.reset_period, -1):
+            counter.pop(e, 0)
+        self.shared.log.warning(counter)
 
     def run(self):
         while True:
             if self.events['termth-stats'].is_set():
                 break
-            now = int(time.time())
-            for k, v in self.last_reset.iteritems():
-                if int(k) != 0 and now - self.last_reset[k] >= int(k) * 60:
+            self.now = int(time.time())
+            if self.now - self.last_reset >= self.reset_period:
+                for worker in self.shared.workers:
                     for what in ['consumed', 'published']:
-                        for w in self.shared.workers:
-                            idx = self.map[k]
-                            self.shared.statint[w][what][idx] = 0
-                    self.last_reset[k] = now
+                        self.reset_counter(self.shared.statint[worker][what])
+                self.last_reset = self.now
 
             time.sleep(self.shared.runtime['evsleep'])
 
@@ -96,11 +94,11 @@ class StatSock(Process):
        Listen'n'Answer process that listens and parses queries on local socket
        and replies back with answer. Queries are in form of
 
-         "w:<worker>+g:<published/consumed><interval>"
+         "w:<worker>+g:<published/consumed><num_minutes>"
 
        where for each worker process consumed or published number of messages
-       can be asked for interval of last 15, 30, 60, 180, 360, 720 and 1440
-       minutes. Answer is served as:
+       can be asked for arbitrary number of last minutes, max 1440 (24h).
+       Answer is served as:
 
          "w:<worker>+r:<num of messages or error>"
     """
@@ -108,11 +106,10 @@ class StatSock(Process):
         Process.__init__(self)
         self.poller = select.poll()
         self.events = events
+        self.max_minutes_lookback = 1440
         self.shared = Shared()
         self.sock = sock
-        self._int2idx = {'15': 0, '30': 1, '60': 2, '180': 3, '360': 4,
-                         '720': 5, '1440': 6, '0': 7}
-        self.resetth = Reset(events=events, map=self._int2idx)
+        self.resetth = Reset(events=events, min_lookback=self.max_minutes_lookback)
 
         try:
             self.sock.listen(1)
@@ -137,7 +134,10 @@ class StatSock(Process):
                 r = re.search('([a-zA-Z]+)([0-9]+)', g)
                 try:
                     if r:
-                        queries.append((w, r.group(1), self._int2idx[r.group(2)]))
+                        if int(r.group(2)) > self.max_minutes_lookback:
+                            queries.append((w, 'error'))
+                        else:
+                            queries.append((w, r.group(1), r.group(2)))
                     else:
                         queries.append((w, 'error'))
                 except KeyError:
@@ -148,11 +148,19 @@ class StatSock(Process):
         else:
             return False
 
+    def get_nmsg(self, worker, what, nmin):
+        now = int(time.time())
+        count = 0
+        for e in range(now, now - int(nmin) * 60, -1):
+            count += self.shared.statint[worker][what].get(e, 0)
+
+        return count
+
     def answer(self, query):
         a = ''
         for q in query:
             if q[1] != 'error':
-                r = self.shared.get_nmsg(q[0], q[1], q[2])
+                r = self.get_nmsg(q[0], q[1], q[2])
                 a += 'w:%s+r:%s ' % (str(q[0]), str(r))
             else:
                 a += 'w:%s+r:error ' % str(q[0])
