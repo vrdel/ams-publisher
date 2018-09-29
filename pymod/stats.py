@@ -55,23 +55,24 @@ class StatSig(object):
         self._stat_msg(sincelaststat/decimal.Decimal(3600))
 
 
-class Reset(Thread):
+class CleanStale(Thread):
     """
-       Reset helper thread that resets dictionary counter with frequency of
-       messages in second from epoch.
+       Helper thread that cleans counters of messages in given epoch second.
+       Entries older than minutes_lookback will be discarded.
     """
-    def __init__(self, events, min_lookback):
+    def __init__(self, events, minutes_lookback):
         Thread.__init__(self)
         self.events = events
         self.shared = Shared()
         if not self.shared.runtime['daemonized']:
             self.daemon = True
         self.last_reset = int(time.time())
-        self.reset_period = min_lookback * 60
+        self.reset_period = minutes_lookback * 60
         self.start()
 
     def reset_counter(self, counter):
-        for e in range(self.now, self.now - self.reset_period, -1):
+        for e in range(self.now - self.reset_period,
+                       self.now - self.reset_period * 2, -1):
             counter.pop(e, 0)
         self.shared.log.warning(counter)
 
@@ -109,7 +110,8 @@ class StatSock(Process):
         self.max_minutes_lookback = 1440
         self.shared = Shared()
         self.sock = sock
-        self.resetth = Reset(events=events, min_lookback=self.max_minutes_lookback)
+        self.resetth = CleanStale(events=events,
+                                  minutes_lookback=self.max_minutes_lookback)
 
         try:
             self.sock.listen(1)

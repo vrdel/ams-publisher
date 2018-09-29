@@ -34,6 +34,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
         # { int(time.time()): num_of_bulk_msgs, ... }
         #
         # Counter is read on queries from socket.
+        # collections.Counter cannot be shared between processes so
+        # manager.dict() is used.
         shared.statint[w]['consumed'] = manager.dict()
         shared.statint[w]['published'] = manager.dict()
 
