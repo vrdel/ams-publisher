@@ -161,11 +161,17 @@ class StatSock(Process):
     def answer(self, query):
         a = ''
         for q in query:
-            if q[1] != 'error':
-                r = self.get_nmsg(q[0], q[1], q[2])
-                a += 'w:%s+r:%s ' % (str(q[0]), str(r))
-            else:
+            try:
+                if q[1] != 'error':
+                    r = self.get_nmsg(q[0], q[1], q[2])
+                    a += 'w:%s+r:%s ' % (str(q[0]), str(r))
+                else:
+                    a += 'w:%s+r:error ' % str(q[0])
+            except KeyError as e:
                 a += 'w:%s+r:error ' % str(q[0])
+                pass
+
+        a = 't:%s ' % self.shared.runtime['started_epoch'] + a
 
         return a[:-1]
 

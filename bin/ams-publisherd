@@ -64,7 +64,9 @@ def query_stats(last_minutes):
         sock.connect(shared.general['statsocket'])
         sock.send(query_published, maxcmdlength)
         data = sock.recv(maxcmdlength)
-        for answer in data.split(' '):
+        for answer in data.split():
+            if answer.startswith('t:'):
+                continue
             w, r = parse_result(answer)
             shared.log.info('worker:{0} published:{1}'.format(w, r))
         sock.close()
@@ -76,6 +78,8 @@ def query_stats(last_minutes):
         sock.send(query_consumed, maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split(' '):
+            if answer.startswith('t:'):
+                continue
             w, r = parse_result(answer)
             shared.log.info('worker:{0} consumed:{1}'.format(w, r))
         sock.close()
