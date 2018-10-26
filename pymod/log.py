@@ -35,7 +35,7 @@ class Logger(object):
         lf = logging.Formatter(fmt=lfs, datefmt='%Y-%m-%d %H:%M:%S')
         lv = logging.INFO
 
-        sf = logging.handlers.RotatingFileHandler(logfile, maxBytes=512*1024, backupCount=5)
+        sf = logging.FileHandler(logfile)
         self.logger.fileloghandle = sf.stream
         sf.setFormatter(lf)
         sf.setLevel(lv)
