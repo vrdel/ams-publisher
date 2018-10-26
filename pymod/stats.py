@@ -101,7 +101,7 @@ class StatSock(Process):
        can be asked for arbitrary number of last minutes, max 1440 (24h).
        Answer is served as:
 
-         "w:<worker>+r:<num of messages or error>"
+         "t:<start time in epoch seconds> w:<worker>+r:<num of messages or error>"
     """
     def __init__(self, events, sock):
         Process.__init__(self)
