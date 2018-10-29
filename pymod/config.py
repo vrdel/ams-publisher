@@ -4,11 +4,21 @@ from pytz import timezone, UnknownTimeZoneError
 
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 
+
 def get_queue_granul(queue):
     confopts = parse_config()
+    is_queue_found = False
+
     for k, v in confopts['queues'].iteritems():
         if confopts['queues'][k]['directory'].startswith(queue):
-            return confopts['queues'][k]['granularity']
+            is_queue_found = True
+            break
+
+    if is_queue_found:
+        return confopts['queues'][k]['granularity']
+    else:
+        raise KeyError
+
 
 def parse_config(logger=None):
     """

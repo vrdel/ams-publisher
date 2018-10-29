@@ -93,6 +93,14 @@ def main():
         except MessageError as e:
             logger.error('Error constructing metric - %s', repr(e))
 
+        except KeyError:
+            logger.error('No configured Queue for directory %s' % q)
+            queue_paths = list()
+            for (k, v) in confopts['queues'].items():
+                queue_paths.append('{0} - {1}'.format(k, v['directory']))
+            logger.error('Queues and directories found in config: %s' % ', '.join(queue_paths))
+            raise SystemExit(1)
+
         except (OSError, IOError) as e:
             logger.error(e)
             raise SystemExit(1)
