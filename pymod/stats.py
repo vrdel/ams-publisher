@@ -74,7 +74,6 @@ class CleanStale(Thread):
         for e in range(self.now - self.reset_period,
                        self.now - self.reset_period * 2, -1):
             counter.pop(e, 0)
-        self.shared.log.warning(counter)
 
     def run(self):
         while True:
