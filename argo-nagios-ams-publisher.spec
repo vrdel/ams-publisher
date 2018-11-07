@@ -57,6 +57,7 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %files -f INSTALLED_FILES
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf 
+%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
 %dir %{python_sitelib}/%{underscore %{name}}
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 %defattr(-,nagios,nagios,-)
