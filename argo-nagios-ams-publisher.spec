@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.1
+Version:        0.3.2
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -57,6 +57,7 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %files -f INSTALLED_FILES
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf 
+%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
 %dir %{python_sitelib}/%{underscore %{name}}
 %{python_sitelib}/%{underscore %{name}}/*.py[co]
 %defattr(-,nagios,nagios,-)
@@ -108,6 +109,11 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Thu Nov  8 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.3.2-1%{?dist}
+- ARGO-1429 Improved msg counter stats for probe testing purposes
+- ARGO-1408 Ensure correct permissions on pidfile directory
+- ARGO-1348 Descriptive error in case delivery cache tool is called with queue
+  path not specified in configs
 * Tue Jun 19 2018 Daniel Vrcic <dvrcic@srce.hr> - 0.3.1-1%{?dist}
 - ARGO-1250 Inspection local socket is left with root permissions 
 - ARGO-1147 AMS publisher to add optional field
