@@ -156,6 +156,13 @@ class MessagingPublisher(Publish):
                                 self.shared.log.warning('{0} {1} Giving try: {2} after {3} seconds'.format(self.__class__.__name__, self.name, t, s))
                                 pass
 
+                    # catch errors not handled in ams-library, report them in
+                    # logs and retry
+                    except Exception as e:
+                        self.shared.log.error('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
+                        self.shared.log.error('Retry after unexpected error')
+                        pass
+
                     finally:
                         lck.release()
 
