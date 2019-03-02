@@ -160,6 +160,7 @@ class MessagingPublisher(Publish):
                     # logs and retry
                     except Exception as e:
                         self.shared.log.error('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
+                        time.sleep(self.shared.runtime['evsleep'])
                         self.shared.log.error('Retry after unexpected error')
                         pass
 
