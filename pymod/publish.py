@@ -111,9 +111,8 @@ class MessagingPublisher(Publish):
 
         return _part_date(timestamp), m
 
-    def body2dict(self, body):
-        part_of_body = ['summary', 'message', 'actual_data']
-        d = dict()
+    def _extract_body(self, body, fields, maps=None):
+        msg = dict()
 
         bodylines = body.split('\n')
         for line in bodylines:
@@ -122,34 +121,26 @@ class MessagingPublisher(Publish):
                 key = split[0]
                 value = split[1]
 
-                if key not in set(part_of_body):
+                if key not in set(fields):
                     continue
 
-                d[key] = value.decode('utf-8', 'replace')
+                if maps and key in maps:
+                    key = maps[key]
 
-        return d
+                msg[key] = value.decode('utf-8', 'replace')
+
+        return msg
+
+    def body2dict(self, body):
+        body_fields = ['summary', 'message', 'actual_data']
+
+        return self._extract_body(body, body_fields)
 
     def tag2dict(self, body):
-        part_of_tag = ['vofqan', 'voname', 'roc', 'site']
-        header_map = dict(site='endpoint_group')
-        d = dict()
+        tag_fields = ['vofqan', 'voname', 'roc', 'site']
+        body_to_tagname = dict(site='endpoint_group')
 
-        bodylines = body.split('\n')
-        for line in bodylines:
-            split = line.split(': ', 1)
-            if len(split) > 1:
-                key = split[0]
-                value = split[1]
-
-                if key not in set(part_of_tag):
-                    continue
-
-                if key in header_map:
-                    key = header_map[key]
-
-                d[key] = value.decode('utf-8', 'replace')
-
-        return d
+        return self._extract_body(body, tag_fields, body_to_tagname)
 
     def _write(self, msgs):
         t = 1
