@@ -11,6 +11,7 @@ from argo_nagios_ams_publisher.shared import Shared
 from argo_nagios_ams_publisher.stats import StatSig
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
+
 class Publish(StatSig):
     """
        Base publisher class that initialize statistic data
@@ -26,6 +27,7 @@ class Publish(StatSig):
         counter = self.shared.statint[self.name]['published']
         counter[now] = num + counter.get(now, 0)
         self.shared.statint[self.name]['published_periodic'] += num
+
 
 class FilePublisher(Publish):
     """
@@ -56,6 +58,7 @@ class FilePublisher(Publish):
         except Exception as e:
             self.shared.log.error(e)
             return False, published
+
 
 class MessagingPublisher(Publish):
     """
@@ -97,6 +100,7 @@ class MessagingPublisher(Publish):
         plainmsg = dict()
         plainmsg.update(msg.header)
         plainmsg.update(self.body2dict(msg.body))
+        plainmsg.update(tags=self.tag2dict(msg.body))
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
@@ -108,13 +112,41 @@ class MessagingPublisher(Publish):
         return _part_date(timestamp), m
 
     def body2dict(self, body):
+        part_of_body = ['summary', 'message', 'actual_data']
         d = dict()
+
         bodylines = body.split('\n')
         for line in bodylines:
             split = line.split(': ', 1)
             if len(split) > 1:
                 key = split[0]
                 value = split[1]
+
+                if key not in set(part_of_body):
+                    continue
+
+                d[key] = value.decode('utf-8', 'replace')
+
+        return d
+
+    def tag2dict(self, body):
+        part_of_tag = ['vofqan', 'voname', 'roc', 'site']
+        header_map = dict(site='endpoint_group')
+        d = dict()
+
+        bodylines = body.split('\n')
+        for line in bodylines:
+            split = line.split(': ', 1)
+            if len(split) > 1:
+                key = split[0]
+                value = split[1]
+
+                if key not in set(part_of_tag):
+                    continue
+
+                if key in header_map:
+                    key = header_map[key]
+
                 d[key] = value.decode('utf-8', 'replace')
 
         return d
