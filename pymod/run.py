@@ -47,8 +47,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
-            shared.runtime['started']  = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            shared.runtime['started_epoch']  = str(int(time.time()))
+            shared.runtime['started'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            shared.runtime['started_epoch'] = str(int(time.time()))
 
         if shared.general['publishmsgfile']:
             shared.runtime.update(publisher=FilePublisher)

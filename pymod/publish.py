@@ -11,6 +11,7 @@ from argo_nagios_ams_publisher.shared import Shared
 from argo_nagios_ams_publisher.stats import StatSig
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
+
 class Publish(StatSig):
     """
        Base publisher class that initialize statistic data
@@ -26,6 +27,7 @@ class Publish(StatSig):
         counter = self.shared.statint[self.name]['published']
         counter[now] = num + counter.get(now, 0)
         self.shared.statint[self.name]['published_periodic'] += num
+
 
 class FilePublisher(Publish):
     """
@@ -56,6 +58,7 @@ class FilePublisher(Publish):
         except Exception as e:
             self.shared.log.error(e)
             return False, published
+
 
 class MessagingPublisher(Publish):
     """
@@ -97,6 +100,7 @@ class MessagingPublisher(Publish):
         plainmsg = dict()
         plainmsg.update(msg.header)
         plainmsg.update(self.body2dict(msg.body))
+        plainmsg.update(tags=self.tag2dict(msg.body))
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
@@ -107,17 +111,36 @@ class MessagingPublisher(Publish):
 
         return _part_date(timestamp), m
 
-    def body2dict(self, body):
-        d = dict()
+    def _extract_body(self, body, fields, maps=None):
+        msg = dict()
+
         bodylines = body.split('\n')
         for line in bodylines:
             split = line.split(': ', 1)
             if len(split) > 1:
                 key = split[0]
                 value = split[1]
-                d[key] = value.decode('utf-8', 'replace')
 
-        return d
+                if key not in set(fields):
+                    continue
+
+                if maps and key in maps:
+                    key = maps[key]
+
+                msg[key] = value.decode('utf-8', 'replace')
+
+        return msg
+
+    def body2dict(self, body):
+        body_fields = ['summary', 'message', 'actual_data']
+
+        return self._extract_body(body, body_fields)
+
+    def tag2dict(self, body):
+        tag_fields = ['vofqan', 'voname', 'roc', 'site']
+        body_to_tagname = dict(site='endpoint_group')
+
+        return self._extract_body(body, tag_fields, body_to_tagname)
 
     def _write(self, msgs):
         t = 1

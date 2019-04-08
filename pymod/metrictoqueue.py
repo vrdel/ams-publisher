@@ -17,9 +17,11 @@ import pytz
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
+
 def seteuser(user):
     os.setegid(user.pw_gid)
     os.seteuid(user.pw_uid)
+
 
 def build_msg(args, *headers):
     msg = Message()
@@ -35,12 +37,13 @@ def build_msg(args, *headers):
     msg.header.update({'status': status.encode('utf-8')})
     msg.header.update({'monitoring_host': nagioshost.encode('utf-8')})
 
-    for bs in ['summary', 'message', 'vofqan', 'voname', 'roc', 'actual_data']:
+    for bs in ['summary', 'message', 'vofqan', 'voname', 'roc', 'actual_data', 'site']:
         code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
     msg.text = True
     return msg
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -67,6 +70,7 @@ def main():
     parser.add_argument('--summary', required=False, type=str)
     parser.add_argument('--vofqan', required=False, type=str)
     parser.add_argument('--voname', required=False, type=str)
+    parser.add_argument('--site', required=False, type=str)
 
     args = parser.parse_args()
 
