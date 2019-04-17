@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.4
+Version:        0.3.5
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -109,6 +109,8 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Wed Apr 17 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.5-1%{?dist}
+- ARGO-1726 Pass site name in metric results  
 * Wed Mar 6 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.4-1%{?dist}
 - verbose log messages for errors not handled in argo-ams-library
 * Tue Feb  5 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.3-1%{?dist}
