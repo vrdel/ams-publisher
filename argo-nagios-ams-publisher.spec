@@ -11,7 +11,7 @@
 
 Name:           argo-nagios-ams-publisher
 Version:        0.3.5
-Release:        1%{mydist}
+Release:        2%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
@@ -109,6 +109,8 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Tue Apr 23 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.5-2%{?dist}
+- regression fix to include site name in `site` field of notification
 * Wed Apr 17 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.5-1%{?dist}
 - ARGO-1726 Pass site name in metric results  
 * Wed Mar 6 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.4-1%{?dist}
