@@ -101,6 +101,7 @@ class MessagingPublisher(Publish):
         plainmsg.update(msg.header)
         plainmsg.update(self.body2dict(msg.body))
         plainmsg.update(tags=self.tag2dict(msg.body))
+        print(plainmsg)
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
@@ -132,12 +133,19 @@ class MessagingPublisher(Publish):
         return msg
 
     def body2dict(self, body):
-        body_fields = ['summary', 'message', 'actual_data']
+        if self.shared.topic['msgtype'] == 'alarm':
+            body_fields = ['details', 'vo', 'site', 'roc', 'urlhistory', 'urlhelp']
+        elif self.shared.topic['msgtype'] == 'metric_data':
+            body_fields = ['summary', 'message', 'actual_data']
 
         return self._extract_body(body, body_fields)
 
     def tag2dict(self, body):
-        tag_fields = ['vofqan', 'voname', 'roc', 'site']
+        if self.shared.topic['msgtype'] == 'metric_data':
+            tag_fields = ['vofqan', 'voname', 'roc', 'site']
+        elif self.shared.topic['msgtype'] == 'alarm':
+            tag_fields = []
+
         body_to_tagname = dict(site='endpoint_group')
 
         return self._extract_body(body, tag_fields, body_to_tagname)
