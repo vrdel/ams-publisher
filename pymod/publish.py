@@ -101,7 +101,6 @@ class MessagingPublisher(Publish):
         plainmsg.update(msg.header)
         plainmsg.update(self.body2dict(msg.body))
         plainmsg.update(tags=self.tag2dict(msg.body))
-        print(plainmsg)
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
