@@ -28,14 +28,14 @@ def build_msg(args, *headers):
 
     timestamp, service, hostname, testname, status, nagioshost = headers
 
-    msg.header.update({'execution_time': timestamp.encode('utf-8')})
-    msg.header.update({'service_flavour': service.encode('utf-8')})
-    msg.header.update({'node_name': hostname.encode('utf-8')})
-    msg.header.update({'test_name': testname.encode('utf-8')})
-    msg.header.update({'status': status.encode('utf-8')})
+    msg.header.update({'execution_time': timestamp})
+    msg.header.update({'service_flavour': service})
+    msg.header.update({'node_name': hostname})
+    msg.header.update({'test_name': testname})
+    msg.header.update({'status': status})
 
     for bs in ['details', 'vo', 'site', 'roc', 'urlhistory', 'urlhelp']:
-        code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
+        code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
     msg.text = True
