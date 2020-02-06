@@ -127,7 +127,7 @@ class MessagingPublisher(Publish):
                 if maps and key in maps:
                     key = maps[key]
 
-                msg[key] = value.decode('utf-8', 'replace')
+                msg[key] = value
 
         return msg
 

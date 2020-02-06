@@ -30,15 +30,15 @@ def build_msg(args, *headers):
 
     timestamp, service, hostname, metric, status, nagioshost = headers
 
-    msg.header.update({'timestamp': timestamp.encode('utf-8')})
-    msg.header.update({'service': service.encode('utf-8')})
-    msg.header.update({'hostname': hostname.encode('utf-8')})
-    msg.header.update({'metric': metric.encode('utf-8')})
-    msg.header.update({'status': status.encode('utf-8')})
-    msg.header.update({'monitoring_host': nagioshost.encode('utf-8')})
+    msg.header.update({'timestamp': timestamp})
+    msg.header.update({'service': service})
+    msg.header.update({'hostname': hostname})
+    msg.header.update({'metric': metric})
+    msg.header.update({'status': status})
+    msg.header.update({'monitoring_host': nagioshost})
 
     for bs in ['summary', 'message', 'vofqan', 'voname', 'roc', 'actual_data', 'site']:
-        code = "msg.body += '%s: ' + args.%s.encode(\'utf-8\') + '\\n' if args.%s else ''" % (bs, bs, bs)
+        code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
         exec code
 
     msg.text = True
