@@ -38,16 +38,16 @@ Component relies on:
 - `pytz` - timezone manipulation
 
 
-| File Types       | Destination                                        |
-|------------------|----------------------------------------------------|
-| Configuration    | `/etc/argo-nagios-ams-publisher/ams-publisher.conf`|
-| Daemon component | `/usr/bin/ams-publisherd`                          |
-| Cache delivery   | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
-| Init script      | `/etc/init.d/ams-publisher`                        |
-| SystemD Unit     | `/usr/lib/systemd/system/ams-publisher.service`    |
-| Local caches     | `/var/spool/argo-nagios-ams-publisher/`            |
-| Inspection socket| `/var/run/argo-nagios-ams-publisher/sock`          |
-| Log files        | `/var/log/argo-nagios-ams-publisher/`              |
+| File Types        | Destination                                        |
+|-------------------|----------------------------------------------------|
+| Configuration     | `/etc/argo-nagios-ams-publisher/ams-publisher.conf`|
+| Daemon component  | `/usr/bin/ams-publisherd`                          |
+| Cache delivery    | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
+| Init script (C6)  | `/etc/init.d/ams-publisher`                        |
+| SystemD Unit (C7) | `/usr/lib/systemd/system/ams-publisher.service`    |
+| Local caches      | `/var/spool/argo-nagios-ams-publisher/`            |
+| Inspection socket | `/var/run/argo-nagios-ams-publisher/sock`          |
+| Log files         | `/var/log/argo-nagios-ams-publisher/`              |
 
 ## Configuration
 
@@ -69,7 +69,7 @@ StatSocket = /var/run/argo-nagios-ams-publisher/sock
 
 * `Host` - FQDN of ARGO Monitoring instance that will be part of formed messages dispatched to ARGO Messaging system
 * `RunAsUser` - component will run with effective UID and GID of given user, usually `nagios`
-* `StatsEveryHour` - write periodic report in system logs. Example is given in [Logs][Logs] 
+* `StatsEveryHour` - write periodic report in system logs. Example is given in [Logs](Logs) 
 * `PublishMsgFile`, `PublishMsgFileDir` - "file publisher" that is actually only for testing purposes. If enabled, messages will not be dispatched to ARGO Messaging System, instead it will just be appended to plain text file 
 * `TimeZone` - construct timestamp of messages within specified timezone
 * `StatsSocket` - query socket that is used for inspection of rates of each worker. It used by the `ams-publisher` Nagios probe.
@@ -114,7 +114,19 @@ SleepRetry = 300
 * `[Topic_Metrics].Retry,SleepRetry` - these configures how publisher is resilient to network connection problems and ARGO Messaging system downtimes. Default `5 x 300` means that the publisher worker will be resilient to a minimum of `1500` seconds (25 min) of connection problems retrying `5` times and sleeping aproximately `300` seconds before each next attempt
 * `[Topic_Metrics].Timeout` - defines the maximum amount of seconds within which request to ARGO Messaging system must be finalized. Consider raising it up for bigger `Bulksize` number.
 
-## Logs and inspection 
+## Running
+
+Components needs to be properly configured before starting it. At least one worker must be spawned so at least one directory queue needs to exist, Nagios should deliver results to it and publisher part of the worker needs to be associated to it. Afterward, it's just a matter of starting the service.
+
+CentOS 6:
+```
+/etc/init.d/ams-publisher start
+```
+
+CentOS 7:
+```
+systemctl start ams-publisher.service
+```
 
 Component periodically reports rates of each worker in system logs. It does so every `StatsEveryHour`. 
 ```
