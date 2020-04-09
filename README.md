@@ -8,7 +8,7 @@
 
 Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `argo-nagios-ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
 
-Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `argo-nagios-ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also import to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue since every result is represented as a one file on the file system meaning easily exhaustion of free inodes and unusable monitoring instance.
+Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `argo-nagios-ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also import to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue and since every result is represented as a one file on the file system, easily exhaustion of free inodes and therefore unusable monitoring instance.
 
 More about [Directory queue design](https://dirq.readthedocs.io/en/latest/queuesimple.html#directory-structure)
 
@@ -145,9 +145,9 @@ Check the rates of configured workers for past minutes:
 ```
 % ams-publisherd -q 60
 INFO - Asked for statistics for last 60 minutes
-INFO - worker:metrics published:8600
+INFO - worker:metrics published:8500
 INFO - worker:alarms published:26
-INFO - worker:metricsdevel published:8600
+INFO - worker:metricsdevel published:8500
 INFO - worker:metrics consumed:8588
 INFO - worker:alarms consumed:26
 INFO - worker:metricsdevel consumed:8587
