@@ -6,13 +6,15 @@
 - queueing mechanism 
 - publishing/dispatching part
 
-Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `argo-nagios-ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
+Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `argo-nagios-ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
 
-More about [Directory queue](https://dirq.readthedocs.io/en/latest/queuesimple.html#directory-structure)
+Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `argo-nagios-ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also import to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue since every result is represented as a one file on the file system meaning easily exhaustion of free inodes and unusable monitoring instance.
+
+More about [Directory queue design](https://dirq.readthedocs.io/en/latest/queuesimple.html#directory-structure)
 
 ### Features
 
-Some of the main features are:
+Complete list of features are:
 - efficient and scalable directory based queueing
 - configurable number of (consume, publish) pairs - workers
 - two type of publishers: metric results and alarms
@@ -69,7 +71,7 @@ StatSocket = /var/run/argo-nagios-ams-publisher/sock
 
 * `Host` - FQDN of ARGO Monitoring instance that will be part of formed messages dispatched to ARGO Messaging system
 * `RunAsUser` - component will run with effective UID and GID of given user, usually `nagios`
-* `StatsEveryHour` - write periodic report in system logs. Example is given in [Logs](Logs) 
+* `StatsEveryHour` - write periodic report in system logs. Example is given in [Running](Running) 
 * `PublishMsgFile`, `PublishMsgFileDir` - "file publisher" that is actually only for testing purposes. If enabled, messages will not be dispatched to ARGO Messaging System, instead it will just be appended to plain text file 
 * `TimeZone` - construct timestamp of messages within specified timezone
 * `StatsSocket` - query socket that is used for inspection of rates of each worker. It used by the `ams-publisher` Nagios probe.
@@ -104,7 +106,7 @@ SleepRetry = 300
 ```
 
 * `[Queue_Metrics].Directory` - path of directory queue on the filesystem where local cache delivery tools write results of Nagios tests/probes.
-* `[Queue_Metrics].Rate` - local cache inspection rate. 10 means that cache will be inspected 10 times at a second because thats the number of status results expected from Nagios. For low volume tenants this could be a lower number.
+* `[Queue_Metrics].Rate` - local cache inspection rate. 10 means that cache will be inspected 10 times at a second because thats the number of status results expected from Nagios that will be picked up verly early. For low volume tenants this could be a lower number.
 * `[Queue_Metrics].Purge,PurgeEverySec,MaxTemp,MaxLock` - purge the staled elements of directory queue every `PurgeEverySec` seconds. It cleans the empty intermediate directories below directory queue path, temporary results that exceeded `MaxTemp` time and locked results that exceeded `MaxLock`. 
 > It is advisable to leave `MaxLock = 0` which skips every result that have been transformed into a message and added into in-memory queue, but had not yet been dispatched.
 * `[Queue_Metrics].Granularity` - new intermediate directory in the toplevel directory queue path is created every `Granularity` seconds
