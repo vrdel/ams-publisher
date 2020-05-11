@@ -131,9 +131,13 @@ def daemon_start(context_daemon, restart=False):
     def sigusrhandle(signum, frame):
         shared.event('usr1').set()
 
+    def sighuphandle(signum, frame):
+        shared.event('hup').set()
+
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
-        signal.SIGUSR1: sigusrhandle
+        signal.SIGUSR1: sigusrhandle,
+        signal.SIGHUP: sighuphandle
     }
 
     uid, gid = get_userids(shared.general['runasuser'])
