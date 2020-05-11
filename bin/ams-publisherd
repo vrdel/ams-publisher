@@ -133,6 +133,7 @@ def daemon_start(context_daemon, restart=False):
 
     def sighuphandle(signum, frame):
         shared.event('hup').set()
+        shared.log.info('SIGHUP catch')
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
@@ -258,6 +259,7 @@ def main():
     shared.add_log(logger)
     shared.add_event('term', multiprocessing.Event())
     shared.add_event('usr1', multiprocessing.Event())
+    shared.add_event('hup', multiprocessing.Event())
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     group = parser.add_mutually_exclusive_group(required=True)

@@ -119,6 +119,10 @@ def init_dirq_consume(workers, daemonized, sockstat):
             localevents['usr1-stats'].set()
             shared.event('usr1').clear()
 
+        if shared.event('hup').is_set():
+            shared.log.info('Hot reloading...')
+            shared.event('hup').clear()
+
         try:
             time.sleep(evsleep)
         except KeyboardInterrupt:
