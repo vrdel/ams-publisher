@@ -64,12 +64,12 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
             shared.runtime.update(publisher=MessagingPublisher)
 
-        localevents.update({'lck-'+w: Lock()})
-        localevents.update({'usr1-'+w: Event()})
-        localevents.update({'period-'+w: Event()})
-        localevents.update({'term-'+w: Event()})
-        localevents.update({'termth-'+w: ThreadEvent()})
-        localevents.update({'giveup-'+w: Event()})
+        localevents.update({'lck-' + w: Lock()})
+        localevents.update({'usr1-' + w: Event()})
+        localevents.update({'period-' + w: Event()})
+        localevents.update({'term-' + w: Event()})
+        localevents.update({'termth-' + w: ThreadEvent()})
+        localevents.update({'giveup-' + w: Event()})
         shared.runtime.update(evsleep=evsleep)
         shared.runtime.update(daemonized=daemonized)
 
@@ -93,19 +93,19 @@ def init_dirq_consume(workers, daemonized, sockstat):
         if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
             for c in consumers:
-                localevents['period-'+c.name].set()
+                localevents['period-' + c.name].set()
                 prevstattime = int(time.time())
 
         for c in consumers:
-            if localevents['giveup-'+c.name].is_set():
+            if localevents['giveup-' + c.name].is_set():
                 c.terminate()
                 c.join(1)
-                localevents['giveup-'+c.name].clear()
+                localevents['giveup-' + c.name].clear()
 
         if shared.event('term').is_set():
             for c in consumers:
-                localevents['term-'+c.name].set()
-                localevents['termth-'+c.name].set()
+                localevents['term-' + c.name].set()
+                localevents['termth-' + c.name].set()
                 c.join(1)
             localevents['term-stats'].set()
             localevents['termth-stats'].set()
@@ -115,7 +115,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
         if shared.event('usr1').is_set():
             shared.log.info('Started %s' % shared.runtime['started'])
             for c in consumers:
-                localevents['usr1-'+c.name].set()
+                localevents['usr1-' + c.name].set()
             localevents['usr1-stats'].set()
             shared.event('usr1').clear()
 

@@ -42,11 +42,11 @@ class ConsumerQueue(StatSig, Process):
         self.unlock_dirq_msgs(self.seenmsgs)
 
     def run(self):
-        termev = self.events['term-'+self.name]
-        usr1ev = self.events['usr1-'+self.name]
-        periodev = self.events['period-'+self.name]
-        lck = self.events['lck-'+self.name]
-        evgup = self.events['giveup-'+self.name]
+        termev = self.events['term-' + self.name]
+        usr1ev = self.events['usr1-' + self.name]
+        periodev = self.events['period-' + self.name]
+        lck = self.events['lck-' + self.name]
+        evgup = self.events['giveup-' + self.name]
 
         while True:
             try:

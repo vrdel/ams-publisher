@@ -35,7 +35,7 @@ class Shared(object):
 
     def add_log(self, logger):
         if not getattr(self, 'log', False):
-            self.log= None
+            self.log = None
         self.log = logger
 
     def get_nmsg(self, worker, what, interval):

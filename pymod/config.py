@@ -112,7 +112,7 @@ def parse_config(logger=None):
                         sys.stderr.write('topic_%s: AvroSchema not defined\n' % k)
                     raise SystemExit(1)
 
-            if all([confopts['general']['publishmsgfile'] == False, confopts['general']['publishargomessaging'] == False]):
+            if all([confopts['general']['publishmsgfile'] is False, confopts['general']['publishargomessaging'] is False]):
                 if logger:
                     logger.error('One publisher must be enabled')
                 else:

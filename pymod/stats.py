@@ -52,7 +52,7 @@ class StatSig(object):
 
     def stats(self):
         sincelaststat = decimal.Decimal(int(time.time()) - self.laststattime)
-        self._stat_msg(sincelaststat/decimal.Decimal(3600))
+        self._stat_msg(sincelaststat / decimal.Decimal(3600))
 
 
 class CleanStale(Thread):

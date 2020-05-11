@@ -2,7 +2,7 @@
 # ams-publisher daemon
 # chkconfig: 345 20 80
 # description: ams-publisher daemon
-# processname: ams-publisher  
+# processname: ams-publisher
 
 . /etc/rc.d/init.d/functions
 PROG_NAME="ams-publisher"
