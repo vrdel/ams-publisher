@@ -6,8 +6,11 @@ from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
+from argo_nagios_ams_publisher.config import parse_config
+
 from multiprocessing import Event, Lock, Value, Manager
 from threading import Event as ThreadEvent
+
 
 def init_dirq_consume(workers, daemonized, sockstat):
     """
@@ -38,6 +41,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
         # manager.dict() is used.
         shared.statint[w]['consumed'] = manager.dict()
         shared.statint[w]['published'] = manager.dict()
+        shared.reload_confopts = manager.dict()
 
         # Create integer counters that will be shared across spawned processes
         # and that will keep track of number of published and consumed messages.
@@ -122,6 +126,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         if shared.event('hup').is_set():
             shared.log.info('Reloading workers...')
+            conf_opts = parse_config(shared.log)
+            shared.reload_confopts.update(conf_opts)
             for c in consumers:
                 localevents['hup-' + c.name].set()
             shared.event('hup').clear()

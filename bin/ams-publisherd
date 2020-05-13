@@ -133,7 +133,6 @@ def daemon_start(context_daemon, restart=False):
 
     def sighuphandle(signum, frame):
         shared.event('hup').set()
-        shared.log.info('SIGHUP catch')
 
     context_daemon.signal_map = {
         signal.SIGTERM: sigtermhandle,
