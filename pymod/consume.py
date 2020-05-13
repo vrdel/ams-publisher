@@ -26,12 +26,11 @@ class ConsumerQueue(StatSig, Process):
         self.name = worker
         self.events = events
         self.sess_consumed = 0
-        self.purger = Purger(self.events, worker=worker)
 
         self.seenmsgs = set()
         self.inmemq = deque()
-
         self.setup()
+        self.purger = Purger(self.events, worker=worker)
 
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
@@ -46,6 +45,7 @@ class ConsumerQueue(StatSig, Process):
                                        dirq=self.dirq, filepublisher=False)
             self.publisher = self.shared.runtime['publisher'](self.events, worker=self.name)
         else:
+            self.shared.reload()
             self.dirq = DQS(path=self.shared.queue['directory'])
             self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
                               else self.shared.queue['rate'] / self.shared.topic['bulk']
