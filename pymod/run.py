@@ -66,6 +66,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         localevents.update({'lck-' + w: Lock()})
         localevents.update({'usr1-' + w: Event()})
+        localevents.update({'hup-' + w: Event()})
         localevents.update({'period-' + w: Event()})
         localevents.update({'term-' + w: Event()})
         localevents.update({'termth-' + w: ThreadEvent()})
@@ -120,7 +121,9 @@ def init_dirq_consume(workers, daemonized, sockstat):
             shared.event('usr1').clear()
 
         if shared.event('hup').is_set():
-            shared.log.info('Hot reloading...')
+            shared.log.info('Reloading workers...')
+            for c in consumers:
+                localevents['hup-' + c.name].set()
             shared.event('hup').clear()
 
         try:
