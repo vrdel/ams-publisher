@@ -126,7 +126,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         if shared.event('hup').is_set():
             shared.log.info('Reloading workers...')
-            conf_opts = parse_config(shared.log)
+            conf_opts = parse_config(shared.log, reload=True)
+            shared.log.error(conf_opts)
             shared.reload_confopts.update(conf_opts)
             for c in consumers:
                 localevents['hup-' + c.name].set()
