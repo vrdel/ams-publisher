@@ -33,10 +33,12 @@ class Shared(object):
                 self.statint[worker] = dict(published=None, consumed=None)
 
     def reload(self):
-        queue = self.reload_confopts['queues'][self.worker]
-        topic = self.reload_confopts['topics'][self.worker]
-        self.queue.update(queue)
-        self.topic.update(topic)
+        keys = set(self.reload_confopts.keys())
+        if 'queues' in keys and 'topics' in keys:
+            queue = self.reload_confopts['queues'][self.worker]
+            topic = self.reload_confopts['topics'][self.worker]
+            self.queue.update(queue)
+            self.topic.update(topic)
 
     def add_event(self, name, ev):
         if not getattr(self, 'events', False):
