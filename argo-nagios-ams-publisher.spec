@@ -81,15 +81,15 @@ fi
 rm -rf $RPM_BUILD_ROOT
 
 %preun
-if [ "$1" = 0 ]; then
 %if 0%{?el7:1}
 %systemd_preun ams-publisher.service
 %else
+if [ "$1" = 0 ]; then
 	/sbin/service ams-publisher stop > /dev/null 2>&1
 	/sbin/chkconfig --del ams-publisher
-%endif
 fi
 exit 0
+%endif
 
 %postun
 if [ "$1" = 0 ]; then
