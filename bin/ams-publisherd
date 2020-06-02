@@ -155,6 +155,23 @@ def daemon_start(context_daemon, restart=False):
         init_dirq_consume(shared.workers, daemonized=True, sockstat=sock)
 
 
+def daemon_reload(context_daemon, restart=False):
+    if context_daemon.pidfile.is_locked():
+        pid = context_daemon.pidfile.read_pid()
+
+        try:
+            process = psutil.Process(pid=pid)
+            process.send_signal(signal.SIGHUP)
+        except psutil.NoSuchProcess:
+            context_daemon.pidfile.break_lock()
+            shared.log.info('Not running - cleaning stale pidfile')
+
+    else:
+        shared.log.info('Not running')
+
+    return 0
+
+
 def daemon_stop(context_daemon, restart=False):
     def on_terminate(proc):
         if not restart:
@@ -232,6 +249,9 @@ def daemonizer(args):
         ret = daemon_stop(context_daemon)
         raise SystemExit(ret)
 
+    elif args.daemon == 'reload':
+        daemon_reload(context_daemon)
+
     elif args.daemon == 'restart':
         daemon_stop(context_daemon, restart=True)
         daemon_start(context_daemon, restart=True)
@@ -265,7 +285,7 @@ def main():
     group.add_argument('-n', dest='nofork', action='store_true',
                         help='do not fork into background')
     group.add_argument('-d', dest='daemon', type=str,
-                       help='daemon arguments: start, stop, restart, status', metavar='')
+                       help='daemon arguments: start, stop, reload, restart, status', metavar='')
     group.add_argument('-q', dest='query', required=False, help='query for statistics for last n minutes',
                        nargs='?', type=int, metavar='number of minutes', const=180)
     args = parser.parse_args()
