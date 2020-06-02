@@ -67,14 +67,11 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 
 %post
 %if 0%{?el7:1}
-if [ "$1" = 2]; then
 %systemd_postun_with_restart ams-publisher.service
-else
-%systemd_post ams-publisher.service
-fi
 %else
 /sbin/chkconfig --add ams-publisher
-if [ "$1" = 2 ]; then
+if [[ "$1" == 2 && $(ams-publisherd -d status) ]]
+then
   /sbin/service ams-publisher stop > /dev/null 2>&1
   /sbin/service ams-publisher start > /dev/null 2>&1
 fi
@@ -95,9 +92,6 @@ fi
 exit 0
 
 %postun
-%if 0%{?el7:1}
-%systemd_postun_with_restart ams-publisher.service
-%endif
 if [ "$1" = 0 ]; then
 	test -d  %{_localstatedir}/run/%{name}/ && rm -rf %{_localstatedir}/run/%{name}/
 fi
