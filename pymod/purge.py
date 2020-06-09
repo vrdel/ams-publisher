@@ -23,7 +23,7 @@ class Purger(threading.Thread):
     def run(self):
         wassec = int(datetime.now().strftime('%s'))
         while True:
-            if self.events['termth-'+self.name].is_set():
+            if self.events['termth-' + self.name].is_set():
                 break
             if int(datetime.now().strftime('%s')) - wassec >= self.shared.queue['purgeeverysec']:
                 self.dirq.purge(maxtemp=self.shared.queue['maxtemp'], maxlock=self.shared.queue['maxlock'])

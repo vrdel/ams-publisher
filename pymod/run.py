@@ -6,8 +6,11 @@ from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
 from argo_nagios_ams_publisher.consume import ConsumerQueue
 from argo_nagios_ams_publisher.stats import StatSock
 from argo_nagios_ams_publisher.shared import Shared
+from argo_nagios_ams_publisher.config import parse_config
+
 from multiprocessing import Event, Lock, Value, Manager
 from threading import Event as ThreadEvent
+
 
 def init_dirq_consume(workers, daemonized, sockstat):
     """
@@ -38,6 +41,7 @@ def init_dirq_consume(workers, daemonized, sockstat):
         # manager.dict() is used.
         shared.statint[w]['consumed'] = manager.dict()
         shared.statint[w]['published'] = manager.dict()
+        shared.reload_confopts = manager.dict()
 
         # Create integer counters that will be shared across spawned processes
         # and that will keep track of number of published and consumed messages.
@@ -64,12 +68,13 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
             shared.runtime.update(publisher=MessagingPublisher)
 
-        localevents.update({'lck-'+w: Lock()})
-        localevents.update({'usr1-'+w: Event()})
-        localevents.update({'period-'+w: Event()})
-        localevents.update({'term-'+w: Event()})
-        localevents.update({'termth-'+w: ThreadEvent()})
-        localevents.update({'giveup-'+w: Event()})
+        localevents.update({'lck-' + w: Lock()})
+        localevents.update({'usr1-' + w: Event()})
+        localevents.update({'hup-' + w: Event()})
+        localevents.update({'period-' + w: Event()})
+        localevents.update({'term-' + w: Event()})
+        localevents.update({'termth-' + w: ThreadEvent()})
+        localevents.update({'giveup-' + w: Event()})
         shared.runtime.update(evsleep=evsleep)
         shared.runtime.update(daemonized=daemonized)
 
@@ -93,19 +98,19 @@ def init_dirq_consume(workers, daemonized, sockstat):
         if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
             for c in consumers:
-                localevents['period-'+c.name].set()
+                localevents['period-' + c.name].set()
                 prevstattime = int(time.time())
 
         for c in consumers:
-            if localevents['giveup-'+c.name].is_set():
+            if localevents['giveup-' + c.name].is_set():
                 c.terminate()
                 c.join(1)
-                localevents['giveup-'+c.name].clear()
+                localevents['giveup-' + c.name].clear()
 
         if shared.event('term').is_set():
             for c in consumers:
-                localevents['term-'+c.name].set()
-                localevents['termth-'+c.name].set()
+                localevents['term-' + c.name].set()
+                localevents['termth-' + c.name].set()
                 c.join(1)
             localevents['term-stats'].set()
             localevents['termth-stats'].set()
@@ -115,9 +120,17 @@ def init_dirq_consume(workers, daemonized, sockstat):
         if shared.event('usr1').is_set():
             shared.log.info('Started %s' % shared.runtime['started'])
             for c in consumers:
-                localevents['usr1-'+c.name].set()
+                localevents['usr1-' + c.name].set()
             localevents['usr1-stats'].set()
             shared.event('usr1').clear()
+
+        if shared.event('hup').is_set():
+            shared.log.info('Reloading workers...')
+            conf_opts = parse_config(shared.log, reload=True)
+            shared.reload_confopts.update(conf_opts)
+            for c in consumers:
+                localevents['hup-' + c.name].set()
+            shared.event('hup').clear()
 
         try:
             time.sleep(evsleep)

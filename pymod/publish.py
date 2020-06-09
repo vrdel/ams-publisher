@@ -151,7 +151,7 @@ class MessagingPublisher(Publish):
 
     def _write(self, msgs):
         t = 1
-        lck = self.events['lck-'+self.name]
+        lck = self.events['lck-' + self.name]
         published = set()
         for i in range(self.pubnumloop):
             try:
@@ -164,22 +164,22 @@ class MessagingPublisher(Publish):
                         self.inmemq.rotate(-self.shared.topic['bulk'])
                         break
 
-                    except (AmsServiceException, AmsConnectionException)  as e:
+                    except (AmsServiceException, AmsConnectionException) as e:
                         self.shared.log.warning('{0} {1}: {2}'.format(self.__class__.__name__, self.name, e))
 
                         if t == self.shared.topic['retry']:
                             raise e
                         else:
                             s = self.shared.topic['sleepretry']
-                            n = s/self.shared.runtime['evsleep']
+                            n = s / self.shared.runtime['evsleep']
                             i = 0
                             while i < n:
-                                if self.events['term-'+self.name].is_set():
+                                if self.events['term-' + self.name].is_set():
                                     self.shared.log.info('Process {0} received SIGTERM'.format(self.name))
                                     raise e
-                                if self.events['usr1-'+self.name].is_set():
+                                if self.events['usr1-' + self.name].is_set():
                                     self.stats()
-                                    self.events['usr1-'+self.name].clear()
+                                    self.events['usr1-' + self.name].clear()
                                 time.sleep(self.shared.runtime['evsleep'])
                                 i += 1
                             else:

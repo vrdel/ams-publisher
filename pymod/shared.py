@@ -20,13 +20,25 @@ class Shared(object):
                 self.general = confopts['general']
             if not getattr(self, 'statint', False):
                 self.statint = dict()
+            if not getattr(self, 'reload_confopts', False):
+                # will be set in init_dir_consume()
+                self.reload_confopts = None
             self.workers = self._queues.keys()
+
         if worker:
             self.worker = worker
             self.queue = self._queues[worker]
             self.topic = self._topics[worker]
             if worker not in self.statint:
                 self.statint[worker] = dict(published=None, consumed=None)
+
+    def reload(self):
+        keys = set(self.reload_confopts.keys())
+        if 'queues' in keys and 'topics' in keys:
+            queue = self.reload_confopts['queues'][self.worker]
+            topic = self.reload_confopts['topics'][self.worker]
+            self.queue.update(queue)
+            self.topic.update(topic)
 
     def add_event(self, name, ev):
         if not getattr(self, 'events', False):
@@ -35,7 +47,7 @@ class Shared(object):
 
     def add_log(self, logger):
         if not getattr(self, 'log', False):
-            self.log= None
+            self.log = None
         self.log = logger
 
     def get_nmsg(self, worker, what, interval):

@@ -17,9 +17,11 @@ import sys
 conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
 
+
 def seteuser(user):
     os.setegid(user.pw_gid)
     os.seteuid(user.pw_uid)
+
 
 def build_msg(args, *headers):
     msg = Message()
@@ -40,6 +42,7 @@ def build_msg(args, *headers):
 
     msg.text = True
     return msg
+
 
 def main():
     parser = argparse.ArgumentParser()
