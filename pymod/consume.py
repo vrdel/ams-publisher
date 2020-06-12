@@ -35,23 +35,14 @@ class ConsumerQueue(StatSig, Process):
     def cleanup(self):
         self.unlock_dirq_msgs(self.seenmsgs)
 
-    def setup(self, reload=False):
-        if reload is False:
-            self.dirq = DQS(path=self.shared.queue['directory'])
-            self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
-                              else self.shared.queue['rate'] / self.shared.topic['bulk']
-            self.shared.runtime.update(inmemq=self.inmemq,
-                                       pubnumloop=self.pubnumloop,
-                                       dirq=self.dirq, filepublisher=False)
-            self.publisher = self.shared.runtime['publisher'](self.events, worker=self.name)
-        else:
-            self.shared.reload()
-            self.dirq = DQS(path=self.shared.queue['directory'])
-            self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
-                              else self.shared.queue['rate'] / self.shared.topic['bulk']
-            self.shared.runtime['pubnumloop'] = self.pubnumloop
-            self.shared.runtime['dirq'] = self.dirq
-            self.publisher = self.shared.runtime['publisher'](self.events, worker=self.name)
+    def setup(self):
+        self.dirq = DQS(path=self.shared.queue['directory'])
+        self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
+                            else self.shared.queue['rate'] / self.shared.topic['bulk']
+        self.shared.runtime.update(inmemq=self.inmemq,
+                                    pubnumloop=self.pubnumloop,
+                                    dirq=self.dirq, filepublisher=False)
+        self.publisher = self.shared.runtime['publisher'](self.events, worker=self.name)
 
     def run(self):
         termev = self.events['term-' + self.name]
@@ -80,14 +71,6 @@ class ConsumerQueue(StatSig, Process):
                     self.publisher.stats()
                     lck.release()
                     usr1ev.clear()
-
-                if hup.is_set():
-                    self.shared.log.info('Process {0} received SIGHUP'.format(self.name))
-                    lck.acquire(True)
-                    self.setup(reload=True)
-                    self.cleanup()
-                    lck.release()
-                    hup.clear()
 
                 if periodev.is_set():
                     self.stat_reset()
