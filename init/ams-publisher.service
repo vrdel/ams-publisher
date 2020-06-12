@@ -6,7 +6,6 @@ After=network.target
 Type=simple
 ExecStart=/usr/bin/ams-publisherd -d start
 ExecStop=/usr/bin/ams-publisherd -d stop
-ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target

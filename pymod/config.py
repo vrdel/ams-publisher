@@ -20,7 +20,7 @@ def get_queue_granul(queue):
         raise KeyError
 
 
-def parse_config(logger=None, reload=False):
+def parse_config(logger=None):
     """
        Parse configuration file consisting of one General section and variable
        number of (Queue_<worker>, Topic_<worker>) section pairs
@@ -36,9 +36,9 @@ def parse_config(logger=None, reload=False):
             if len(pairedsects) % 2:
                 if logger:
                     logger.error('Unpaired Queue and Topic sections')
+                    raise SystemExit(1)
                 else:
                     sys.stderr.write('Unpaired Queue and Topic sections\n')
-                if reload is False:
                     raise SystemExit(1)
 
             commonsects = [s.lower() for s in config.sections() if '_' not in s]
@@ -103,33 +103,33 @@ def parse_config(logger=None, reload=False):
                         queues[k]['rate'] % topics[k]['bulk']:
                     if logger:
                         logger.error('queue_%s: Rate should be multiple of BulkSize' % k)
+                        raise SystemExit(1)
                     else:
                         sys.stderr.write('queue_%s: Rate should be multiple of BulkSize\n' % k)
-                    if reload is False:
                         raise SystemExit(1)
 
                 if topics[k]['avro'] and not topics[k].get('avroschema', None):
                     if logger:
                         logger.error('topic_%s: AvroSchema not defined' % k)
+                        raise SystemExit(1)
                     else:
                         sys.stderr.write('topic_%s: AvroSchema not defined\n' % k)
-                    if reload is False:
                         raise SystemExit(1)
 
             if all([confopts['general']['publishmsgfile'] is False, confopts['general']['publishargomessaging'] is False]):
                 if logger:
                     logger.error('One publisher must be enabled')
+                    raise SystemExit(1)
                 else:
                     sys.stderr.write('One publisher must be enabled')
-                if reload is False:
                     raise SystemExit(1)
 
             if all([confopts['general']['publishmsgfile'], confopts['general']['publishargomessaging']]):
                 if logger:
                     logger.error('Only one enabled publisher allowed at a time')
+                    raise SystemExit(1)
                 else:
                     sys.stderr.write('Only one enabled publisher allowed at a time')
-                if reload is False:
                     raise SystemExit(1)
 
             confopts['queues'] = queues
@@ -139,17 +139,17 @@ def parse_config(logger=None, reload=False):
         else:
             if logger:
                 logger.error('Missing %s' % conf)
+                raise SystemExit(1)
             else:
                 sys.stderr.write('Missing %s\n' % conf)
-            if reload is False:
                 raise SystemExit(1)
 
     except (ConfigParser.NoOptionError, ConfigParser.NoSectionError) as e:
         if logger:
             logger.error(e)
+            raise SystemExit(1)
         else:
             sys.stderr.write(str(e) + '\n')
-        if reload is False:
             raise SystemExit(1)
 
     except (ConfigParser.MissingSectionHeaderError, ConfigParser.ParsingError, SystemExit) as e:
@@ -157,10 +157,10 @@ def parse_config(logger=None, reload=False):
             if logger:
                 logger.error(e.filename + ' is not a valid configuration file')
                 logger.error(' '.join(e.args))
+                raise SystemExit(1)
             else:
                 sys.stderr.write(e.filename + ' is not a valid configuration file\n')
                 sys.stderr.write(' '.join(e.args) + '\n')
-        if reload is False:
-            raise SystemExit(1)
+                raise SystemExit(1)
 
     return confopts
