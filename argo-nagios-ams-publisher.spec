@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.6
+Version:        0.3.7
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -107,6 +107,9 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Wed Jul  8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.7-1%{?dist}
+- ARGO-2378 RPM post install should restart service not stop it
+- ARGO-844 Complete README for ams-publisher
 * Tue Mar 31 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.6-1%{?dist}
 - ARGO-2224 Local delivery cache tool should pass non-ascii characters
 * Tue Apr 23 2019 Daniel Vrcic <dvrcic@srce.hr> - 0.3.5-2%{?dist}
