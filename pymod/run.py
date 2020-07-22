@@ -70,7 +70,6 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         localevents.update({'lck-' + w: Lock()})
         localevents.update({'usr1-' + w: Event()})
-        localevents.update({'hup-' + w: Event()})
         localevents.update({'period-' + w: Event()})
         localevents.update({'term-' + w: Event()})
         localevents.update({'termth-' + w: ThreadEvent()})
@@ -123,14 +122,6 @@ def init_dirq_consume(workers, daemonized, sockstat):
                 localevents['usr1-' + c.name].set()
             localevents['usr1-stats'].set()
             shared.event('usr1').clear()
-
-        if shared.event('hup').is_set():
-            shared.log.info('Reloading workers...')
-            conf_opts = parse_config(shared.log, reload=True)
-            shared.reload_confopts.update(conf_opts)
-            for c in consumers:
-                localevents['hup-' + c.name].set()
-            shared.event('hup').clear()
 
         try:
             time.sleep(evsleep)

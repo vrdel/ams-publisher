@@ -48,7 +48,6 @@ class ConsumerQueue(StatSig, Process):
         termev = self.events['term-' + self.name]
         usr1ev = self.events['usr1-' + self.name]
         periodev = self.events['period-' + self.name]
-        hup = self.events['hup-' + self.name]
         lck = self.events['lck-' + self.name]
         evgup = self.events['giveup-' + self.name]
 
