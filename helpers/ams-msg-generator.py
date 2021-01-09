@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import argparse
 import datetime
@@ -77,7 +77,7 @@ def main():
     try:
         tz = timezone(args.timezone)
     except UnknownTimeZoneError as e:
-        print "Timezone not correct"
+        print("Timezone not correct")
         raise SystemExit(1)
 
     mq = DQS(path=args.queue, granularity=args.granularity)
@@ -88,13 +88,13 @@ def main():
                 msg = construct_msg(args.session, args.bodysize, tz)
                 queue_msg(msg, mq)
                 if not args.noout:
-                    print msg
+                    print(msg)
         else:
             while True:
                 msg = construct_msg(args.session, args.bodysize, tz)
                 queue_msg(msg, mq)
                 if not args.noout:
-                    print msg
+                    print(msg)
                 if args.sleep:
                     time.sleep(args.sleep)
 

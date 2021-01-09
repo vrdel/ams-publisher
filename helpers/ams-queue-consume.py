@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import argparse
 import datetime
@@ -27,7 +27,7 @@ def seteuser(user):
 def consume_queue(mq, num=0):
     global cqcalld, args
     if not args.noout:
-        print '---- MSGS ---- RUN {0} ----'.format(cqcalld)
+        print('---- MSGS ---- RUN {0} ----'.format(cqcalld))
 
     i, msgs = 1, deque()
     for name in mq:
@@ -38,7 +38,7 @@ def consume_queue(mq, num=0):
                 break
             i += 1
     else:
-        print '{0} empty'.format(mq.path)
+        print('{0} empty'.format(mq.path))
 
 
     if msgs and not args.noout:
