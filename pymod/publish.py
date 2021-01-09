@@ -114,9 +114,9 @@ class MessagingPublisher(Publish):
     def _extract_body(self, body, fields, maps=None):
         msg = dict()
 
-        bodylines = body.split('\n')
+        bodylines = body.split(b'\n')
         for line in bodylines:
-            split = line.split(': ', 1)
+            split = line.split(b': ', 1)
             if len(split) > 1:
                 key = split[0]
                 value = split[1]
@@ -208,7 +208,7 @@ class MessagingPublisher(Publish):
 
     def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-        msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
+        msgs = list(map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                     'type': self.shared.topic['msgtype']},
-                                        data=m[1]), msgs)
+                                        data=m[1]), msgs))
         return self._write(msgs)
