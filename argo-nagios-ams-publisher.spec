@@ -10,7 +10,7 @@
 %endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.8
+Version:        0.3.9
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -21,20 +21,12 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-BuildRequires:  python-devel
-Requires:       argo-ams-library
-Requires:       avro
-Requires:       python-argparse
-Requires:       python-daemon
-Requires:       python-dirq
-Requires:       python-messaging
+BuildRequires:  python3-devel
+Requires:       python3-argo-ams-library
+Requires:       python3-avro
+Requires:       python3-dirq
+Requires:       python3-messaging
 Requires:       pytz
-
-%if 0%{?el7:1}
-Requires:       python2-psutil >= 4.3
-%else
-Requires:       python-psutil >= 4.3
-%endif
 
 %description
 Bridge from Nagios to the ARGO Messaging system
@@ -59,7 +51,7 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
 %config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
 %dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py[co]
+%{python3_sitelib}/%{underscore %{name}}/*.py
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %attr(0755,nagios,nagios) %dir %{_localstatedir}/run/%{name}/
