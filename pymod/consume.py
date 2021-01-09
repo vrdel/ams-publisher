@@ -38,7 +38,7 @@ class ConsumerQueue(StatSig, Process):
     def setup(self):
         self.dirq = DQS(path=self.shared.queue['directory'])
         self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
-                            else self.shared.queue['rate'] / self.shared.topic['bulk']
+                            else int(self.shared.queue['rate'] / self.shared.topic['bulk'])
         self.shared.runtime.update(inmemq=self.inmemq,
                                     pubnumloop=self.pubnumloop,
                                     dirq=self.dirq, filepublisher=False)
