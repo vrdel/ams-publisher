@@ -13,7 +13,7 @@ def is_c7():
 
 def get_ver():
     try:
-        with open(NAME+'.spec') as f:
+        with open(f'{NAME}.spec') as f:
             for line in f:
                 if "Version:" in line:
                     return line.split()[1]

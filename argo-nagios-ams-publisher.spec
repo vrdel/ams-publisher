@@ -26,7 +26,7 @@ Requires:       python3-argo-ams-library
 Requires:       python3-avro
 Requires:       python3-dirq
 Requires:       python3-messaging
-Requires:       pytz
+Requires:       python36-pytz
 
 %description
 Bridge from Nagios to the ARGO Messaging system
