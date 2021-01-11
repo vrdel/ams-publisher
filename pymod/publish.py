@@ -171,7 +171,7 @@ class MessagingPublisher(Publish):
                             raise e
                         else:
                             s = self.shared.topic['sleepretry']
-                            n = s / self.shared.runtime['evsleep']
+                            n = int(s / self.shared.runtime['evsleep'])
                             i = 0
                             while i < n:
                                 if self.events['term-' + self.name].is_set():
