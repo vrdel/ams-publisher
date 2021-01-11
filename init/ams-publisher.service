@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/ams-publisherd -d start
-ExecStop=/usr/bin/ams-publisherd -d stop
+ExecStart=/usr/bin/ams-publisherd
+KillMode=process
+StandardError=syslog
 
 [Install]
 WantedBy=multi-user.target
