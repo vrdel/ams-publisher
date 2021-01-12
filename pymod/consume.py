@@ -37,8 +37,16 @@ class ConsumerQueue(StatSig, Process):
 
     def setup(self):
         self.dirq = DQS(path=self.shared.queue['directory'])
-        self.pubnumloop = 1 if self.shared.topic['bulk'] > self.shared.queue['rate'] \
-                            else int(self.shared.queue['rate'] / self.shared.topic['bulk'])
+
+        numloop = None
+        if (self.shared.topic['bulk'] == 1
+            or self.shared.topic['bulk'] > self.shared.queue['rate']
+            or self.shared.topic['bulk'] == self.shared.queue['rate']):
+            numloop = 1
+        elif self.shared.queue['rate'] > self.shared.topic['bulk']:
+            numloop = int(self.shared.queue['rate'] / self.shared.topic['bulk'])
+        self.pubnumloop = numloop
+
         self.shared.runtime.update(inmemq=self.inmemq,
                                     pubnumloop=self.pubnumloop,
                                     dirq=self.dirq, filepublisher=False)
@@ -76,8 +84,9 @@ class ConsumerQueue(StatSig, Process):
                     self.publisher.stat_reset()
                     periodev.clear()
 
-                if self.consume_dirq_msgs(max(self.shared.topic['bulk'],
-                                              self.shared.queue['rate'])):
+                nmsgs_consume = 1 if self.shared.topic['bulk'] == 1 \
+                                else max(self.shared.topic['bulk'], self.shared.queue['rate'])
+                if self.consume_dirq_msgs(nmsgs_consume):
                     ret, published = self.publisher.write()
                     if ret:
                         self.remove_dirq_msgs()
