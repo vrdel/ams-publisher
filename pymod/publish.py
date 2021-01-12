@@ -99,8 +99,9 @@ class MessagingPublisher(Publish):
 
         plainmsg = dict()
         plainmsg.update(msg.header)
-        plainmsg.update(self.body2dict(msg.body))
-        plainmsg.update(tags=self.tag2dict(msg.body))
+        if msg.body:
+            plainmsg.update(self.body2dict(msg.body))
+            plainmsg.update(tags=self.tag2dict(msg.body))
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
@@ -114,9 +115,9 @@ class MessagingPublisher(Publish):
     def _extract_body(self, body, fields, maps=None):
         msg = dict()
 
-        bodylines = body.split(b'\n')
+        bodylines = body.split('\n')
         for line in bodylines:
-            split = line.split(b': ', 1)
+            split = line.split(': ', 1)
             if len(split) > 1:
                 key = split[0]
                 value = split[1]

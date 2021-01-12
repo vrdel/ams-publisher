@@ -40,8 +40,7 @@ class ConsumerQueue(StatSig, Process):
 
         numloop = None
         if (self.shared.topic['bulk'] == 1
-            or self.shared.topic['bulk'] > self.shared.queue['rate']
-            or self.shared.topic['bulk'] == self.shared.queue['rate']):
+            or self.shared.topic['bulk'] >= self.shared.queue['rate']):
             numloop = 1
         elif self.shared.queue['rate'] > self.shared.topic['bulk']:
             numloop = int(self.shared.queue['rate'] / self.shared.topic['bulk'])
@@ -106,7 +105,7 @@ class ConsumerQueue(StatSig, Process):
                         evgup.set()
                         raise SystemExit(0)
 
-                time.sleep(decimal.Decimal(1) / decimal.Decimal(self.shared.queue['rate']))
+                time.sleep(1 / self.shared.queue['rate'])
 
             except KeyboardInterrupt:
                 self.cleanup()
