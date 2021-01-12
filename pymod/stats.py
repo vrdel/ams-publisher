@@ -124,7 +124,7 @@ class StatSock(Process):
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
-        m = re.findall(r'w:\w+\+g:\w+', cmd)
+        m = re.findall(r'w:\w+\+g:\w+', cmd.decode())
         queries = list()
 
         if m:
@@ -186,7 +186,7 @@ class StatSock(Process):
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        conn.send(a, maxcmdlength)
+                        conn.send(a.encode(), maxcmdlength)
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()

@@ -25,10 +25,10 @@ logger = None
 def query_stats(last_minutes):
     def parse_result(query):
         try:
-            w, r = query.split('+')
+            w, r = query.split(b'+')
 
-            w = w.split(':')[1]
-            r = int(r.split(':')[1])
+            w = w.split(b':')[1]
+            r = int(r.split(b':')[1])
 
         except (ValueError, KeyError):
             return (w, 'error')
@@ -50,26 +50,26 @@ def query_stats(last_minutes):
         sock.settimeout(15)
 
         sock.connect(shared.general['statsocket'])
-        sock.send(query_published, maxcmdlength)
+        sock.send(query_published.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split():
-            if answer.startswith('t:'):
+            if answer.startswith(b't:'):
                 continue
             w, r = parse_result(answer)
-            shared.log.info('worker:{0} published:{1}'.format(w, r))
+            shared.log.info('worker:{0} published:{1}'.format(w.decode(), r))
         sock.close()
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.settimeout(15)
         sock.connect(shared.general['statsocket'])
-        sock.send(query_consumed, maxcmdlength)
+        sock.send(query_consumed.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
-        for answer in data.split(' '):
-            if answer.startswith('t:'):
+        for answer in data.split(b' '):
+            if answer.startswith(b't:'):
                 continue
             w, r = parse_result(answer)
-            shared.log.info('worker:{0} consumed:{1}'.format(w, r))
+            shared.log.info('worker:{0} consumed:{1}'.format(w.decode(), r))
         sock.close()
 
     except socket.timeout as e:
