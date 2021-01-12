@@ -102,19 +102,6 @@ def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
 
 
-def pidfiledir(pidfile):
-    try:
-        dirp = os.path.dirname(pidfile)
-        if not os.path.exists(dirp):
-            os.makedirs(dirp)
-        uid, gid = get_userids(shared.general['runasuser'])
-        os.chown(dirp, uid, gid)
-    except (OSError, IOError) as e:
-        if e.args[0] != errno.EEXIST:
-            shared.log.error('%s %s' % (os.strerror(e.args[0]), e.args[1]))
-            raise SystemExit(1)
-
-
 def main():
     """
        Function fetch arguments from command line, initialize logger,
