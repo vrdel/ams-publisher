@@ -26,7 +26,6 @@ Requires:       python36-pytz
 Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
-Requires(post):   systemd-sysv
 
 
 %description

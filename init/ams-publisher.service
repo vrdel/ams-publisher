@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 ExecStart=/usr/bin/ams-publisherd
 KillMode=process
+User=nagios
+Group=nagios
 StandardError=syslog
 
 [Install]
