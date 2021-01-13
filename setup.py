@@ -37,5 +37,4 @@ setup(
                 ('/usr/lib/systemd/system/', ['init/ams-publisher.service']) if is_c7() else \
                 ('/etc/init.d/', ['init/ams-publisher'])],
     scripts=['bin/ams-alarm-to-queue', 'bin/ams-metric-to-queue',
-             'bin/ams-publisherd', 'helpers/ams-msg-generator.py',
-             'helpers/ams-queue-consume.py'])
+             'bin/ams-publisherd'])
