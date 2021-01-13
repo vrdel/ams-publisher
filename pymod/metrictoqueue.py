@@ -39,7 +39,7 @@ def build_msg(args, *headers):
 
     for bs in ['summary', 'message', 'vofqan', 'voname', 'roc', 'actual_data', 'site']:
         code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
-        exec code
+        exec(code)
 
     msg.text = True
     return msg

@@ -14,6 +14,84 @@ from argo_nagios_ams_publisher.shared import Shared
 maxcmdlength = 128
 
 
+def query_stats(last_minutes):
+    def parse_result(query):
+        try:
+            w, r = query.split(b'+')
+
+            w = w.split(b':')[1]
+            r = int(r.split(b':')[1])
+
+        except (ValueError, KeyError):
+            return (w, 'error')
+
+        return (w, r)
+
+    shared = Shared()
+
+    maxcmdlength = 128
+    query_consumed, query_published = '', ''
+
+    for w in shared.workers:
+        query_consumed += 'w:{0}+g:consumed{1} '.format(w, last_minutes)
+
+    for w in shared.workers:
+        query_published += 'w:{0}+g:published{1} '.format(w, last_minutes)
+
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.setblocking(0)
+        sock.settimeout(15)
+
+        sock.connect(shared.general['statsocket'])
+        sock.send(query_published.encode(), maxcmdlength)
+        data = sock.recv(maxcmdlength)
+        for answer in data.split():
+            if answer.startswith(b't:'):
+                continue
+            w, r = parse_result(answer)
+            shared.log.info('worker:{0} published:{1}'.format(w.decode(), r))
+        sock.close()
+
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.setblocking(0)
+        sock.settimeout(15)
+        sock.connect(shared.general['statsocket'])
+        sock.send(query_consumed.encode(), maxcmdlength)
+        data = sock.recv(maxcmdlength)
+        for answer in data.split(b' '):
+            if answer.startswith(b't:'):
+                continue
+            w, r = parse_result(answer)
+            shared.log.info('worker:{0} consumed:{1}'.format(w.decode(), r))
+        sock.close()
+
+    except socket.timeout as e:
+        shared.log.error('Socket response timeout after 15s')
+
+    except socket.error as e:
+        shared.log.error('Socket error: {0}'.format(str(e)))
+
+    finally:
+        sock.close()
+
+
+def setup_statssocket(path, uid, gid):
+    global shared
+
+    if os.path.exists(path):
+        os.unlink(path)
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(path)
+        os.chown(path, uid, gid)
+    except socket.error as e:
+        shared.log.error('Error setting up socket: %s - %s' % (path, str(e)))
+        raise SystemExit(1)
+
+    return sock
+
+
 class StatSig(object):
     """
        Class is meant to be subclassed by ConsumerQueue and Publish classes for
@@ -124,7 +202,7 @@ class StatSock(Process):
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
-        m = re.findall(r'w:\w+\+g:\w+', cmd)
+        m = re.findall(r'w:\w+\+g:\w+', cmd.decode())
         queries = list()
 
         if m:
@@ -186,7 +264,7 @@ class StatSock(Process):
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        conn.send(a, maxcmdlength)
+                        conn.send(a.encode(), maxcmdlength)
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()

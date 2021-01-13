@@ -2,15 +2,10 @@
 
 %define underscore() %(echo %1 | sed 's/-/_/g')
 %define stripc() %(echo %1 | sed 's/el7.centos/el7/')
-
-%if 0%{?el7:1}
 %define mydist %{stripc %{dist}}
-%else
-%define mydist %{dist}
-%endif
 
 Name:           argo-nagios-ams-publisher
-Version:        0.3.8
+Version:        0.3.9
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
@@ -21,20 +16,17 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-BuildRequires:  python-devel
-Requires:       argo-ams-library
-Requires:       avro
-Requires:       python-argparse
-Requires:       python-daemon
-Requires:       python-dirq
-Requires:       python-messaging
-Requires:       pytz
+BuildRequires:  python3-devel
+Requires:       python3-argo-ams-library
+Requires:       python3-avro
+Requires:       python3-dirq
+Requires:       python3-messaging
+Requires:       python36-pytz
 
-%if 0%{?el7:1}
-Requires:       python2-psutil >= 4.3
-%else
-Requires:       python-psutil >= 4.3
-%endif
+Requires(post):   systemd
+Requires(preun):  systemd
+Requires(postun): systemd
+
 
 %description
 Bridge from Nagios to the ARGO Messaging system
@@ -43,11 +35,11 @@ Bridge from Nagios to the ARGO Messaging system
 %setup -q
 
 %build
-%{__python} setup.py build
+%{py3_build}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT --record=INSTALLED_FILES
+%{py3_install "--record=INSTALLED_FILES"}
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
@@ -58,37 +50,21 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
 %config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
-%dir %{python_sitelib}/%{underscore %{name}}
-%{python_sitelib}/%{underscore %{name}}/*.py[co]
+%dir %{python3_sitelib}/%{underscore %{name}}
+%{python3_sitelib}/%{underscore %{name}}/*.py
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
 %attr(0755,nagios,nagios) %dir %{_localstatedir}/run/%{name}/
 %dir %{_localstatedir}/spool/%{name}/
 
 %post
-%if 0%{?el7:1}
 %systemd_postun_with_restart ams-publisher.service
-%else
-/sbin/chkconfig --add ams-publisher
-if [[ "$1" == 2 ]]
-then
-  /sbin/service ams-publisher condrestart > /dev/null 2>&1
-fi
-%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %preun
-%if 0%{?el7:1}
 %systemd_preun ams-publisher.service
-%else
-if [ "$1" = 0 ]; then
-	/sbin/service ams-publisher stop > /dev/null 2>&1
-	/sbin/chkconfig --del ams-publisher
-fi
-exit 0
-%endif
 
 %postun
 if [ "$1" = 0 ]; then
@@ -108,7 +84,7 @@ fi
 
 %changelog
 * Thu Oct  8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.8-1%{?dist}
-- remove leftovers from erroneous SIGHUP handling 
+- remove leftovers from erroneous SIGHUP handling
 * Wed Jul  8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.7-1%{?dist}
 - ARGO-2378 RPM post install should restart service not stop it
 - ARGO-844 Complete README for ams-publisher

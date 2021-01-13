@@ -13,12 +13,12 @@ def is_c7():
 
 def get_ver():
     try:
-        with open(NAME+'.spec') as f:
+        with open(f'{NAME}.spec') as f:
             for line in f:
                 if "Version:" in line:
                     return line.split()[1]
     except IOError:
-        print "Make sure that %s is in directory" % (NAME+'.spec')
+        print(f'Make sure that {NAME}.spec is in directory')
         raise SystemExit(1)
 
 
@@ -37,5 +37,4 @@ setup(
                 ('/usr/lib/systemd/system/', ['init/ams-publisher.service']) if is_c7() else \
                 ('/etc/init.d/', ['init/ams-publisher'])],
     scripts=['bin/ams-alarm-to-queue', 'bin/ams-metric-to-queue',
-             'bin/ams-publisherd', 'helpers/ams-msg-generator.py',
-             'helpers/ams-queue-consume.py'])
+             'bin/ams-publisherd'])

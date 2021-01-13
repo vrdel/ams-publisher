@@ -38,7 +38,7 @@ def build_msg(args, *headers):
 
     for bs in ['details', 'vo', 'site', 'roc', 'urlhistory', 'urlhelp']:
         code = "msg.body += '%s: ' + args.%s + '\\n' if args.%s else ''" % (bs, bs, bs)
-        exec code
+        exec(code)
 
     msg.text = True
     return msg

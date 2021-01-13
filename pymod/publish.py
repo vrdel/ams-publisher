@@ -99,8 +99,9 @@ class MessagingPublisher(Publish):
 
         plainmsg = dict()
         plainmsg.update(msg.header)
-        plainmsg.update(self.body2dict(msg.body))
-        plainmsg.update(tags=self.tag2dict(msg.body))
+        if msg.body:
+            plainmsg.update(self.body2dict(msg.body))
+            plainmsg.update(tags=self.tag2dict(msg.body))
         timestamp = plainmsg.get('timestamp', None)
 
         m = None
@@ -171,7 +172,7 @@ class MessagingPublisher(Publish):
                             raise e
                         else:
                             s = self.shared.topic['sleepretry']
-                            n = s / self.shared.runtime['evsleep']
+                            n = int(s / self.shared.runtime['evsleep'])
                             i = 0
                             while i < n:
                                 if self.events['term-' + self.name].is_set():
@@ -208,7 +209,7 @@ class MessagingPublisher(Publish):
 
     def write(self):
         msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-        msgs = map(lambda m: AmsMessage(attributes={'partition_date': m[0],
+        msgs = list(map(lambda m: AmsMessage(attributes={'partition_date': m[0],
                                                     'type': self.shared.topic['msgtype']},
-                                        data=m[1]), msgs)
+                                        data=m[1]), msgs))
         return self._write(msgs)
