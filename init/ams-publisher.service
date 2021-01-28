@@ -10,6 +10,7 @@ User=nagios
 Group=nagios
 SyslogIdentifier=ams-publisher
 StandardError=syslog
+RuntimeDirectory=argo-nagios-ams-publisher
 
 [Install]
 WantedBy=multi-user.target
