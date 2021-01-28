@@ -44,7 +44,7 @@ def query_stats(last_minutes):
         sock.setblocking(0)
         sock.settimeout(15)
 
-        sock.connect(shared.general['statsocket'])
+        sock.connect(STATSOCK)
         sock.send(query_published.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split():
@@ -57,7 +57,7 @@ def query_stats(last_minutes):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.settimeout(15)
-        sock.connect(shared.general['statsocket'])
+        sock.connect(STATSOCK)
         sock.send(query_consumed.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split(b' '):
@@ -194,12 +194,12 @@ class StatSock(Process):
         try:
             self.sock.listen(1)
         except socket.error as m:
-            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (self.shared.general['statsocket'], repr(m)))
+            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (STATSOCK, repr(m)))
             raise SystemExit(1)
 
     def _cleanup(self):
         self.sock.close()
-        os.unlink(self.shared.general['statsocket'])
+        os.unlink(STATSOCK)
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
