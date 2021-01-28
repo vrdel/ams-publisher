@@ -11,7 +11,8 @@ from threading import Thread
 from multiprocessing import Process
 from argo_nagios_ams_publisher.shared import Shared
 
-maxcmdlength = 128
+MAXCMDLENGTH = 128
+STATSOCK = '/run/argo-nagios-ams-publisher/sock'
 
 
 def query_stats(last_minutes):
@@ -43,7 +44,7 @@ def query_stats(last_minutes):
         sock.setblocking(0)
         sock.settimeout(15)
 
-        sock.connect(shared.general['statsocket'])
+        sock.connect(STATSOCK)
         sock.send(query_published.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split():
@@ -56,7 +57,7 @@ def query_stats(last_minutes):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.setblocking(0)
         sock.settimeout(15)
-        sock.connect(shared.general['statsocket'])
+        sock.connect(STATSOCK)
         sock.send(query_consumed.encode(), maxcmdlength)
         data = sock.recv(maxcmdlength)
         for answer in data.split(b' '):
@@ -76,17 +77,17 @@ def query_stats(last_minutes):
         sock.close()
 
 
-def setup_statssocket(path, uid, gid):
-    global shared
+def setup_statssocket(uid, gid):
+    shared = Shared()
 
-    if os.path.exists(path):
-        os.unlink(path)
+    if os.path.exists(STATSOCK):
+        os.unlink(STATSOCK)
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(path)
-        os.chown(path, uid, gid)
+        sock.bind(STATSOCK)
+        os.chown(STATSOCK, uid, gid)
     except socket.error as e:
-        shared.log.error('Error setting up socket: %s - %s' % (path, str(e)))
+        shared.log.error('Error setting up socket: %s - %s' % (STATSOCK, str(e)))
         raise SystemExit(1)
 
     return sock
@@ -193,12 +194,12 @@ class StatSock(Process):
         try:
             self.sock.listen(1)
         except socket.error as m:
-            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (self.shared.general['statsocket'], repr(m)))
+            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (STATSOCK, repr(m)))
             raise SystemExit(1)
 
     def _cleanup(self):
         self.sock.close()
-        os.unlink(self.shared.general['statsocket'])
+        os.unlink(STATSOCK)
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
@@ -260,11 +261,11 @@ class StatSock(Process):
                 event = self.poller.poll(float(self.shared.runtime['evsleep'] * 1000))
                 if len(event) > 0 and event[0][1] & select.POLLIN:
                     conn, addr = self.sock.accept()
-                    data = conn.recv(maxcmdlength)
+                    data = conn.recv(MAXCMDLENGTH)
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        conn.send(a.encode(), maxcmdlength)
+                        conn.send(a.encode(), MAXCMDLENGTH)
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()

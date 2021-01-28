@@ -1,25 +1,15 @@
 #!/usr/bin/python3
+import argparse
+import multiprocessing
+import pwd
+import signal
+import sys
 
 from argo_nagios_ams_publisher.config import parse_config
 from argo_nagios_ams_publisher.log import Logger
 from argo_nagios_ams_publisher.run import init_dirq_consume
 from argo_nagios_ams_publisher.stats import query_stats, setup_statssocket
 from argo_nagios_ams_publisher.shared import Shared
-
-from datetime import datetime
-
-import argparse
-import errno
-import multiprocessing
-import os
-import pwd
-import signal
-import sys
-
-logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
-
-shared = None
-logger = None
 
 
 def get_userids(user):
@@ -34,18 +24,17 @@ def main():
        There is also option for no-daemonizing mainly for debugging purposes.
 
     """
-    def sigterm_handler(signum, frame):
-        ev = shared.event('term')
-        ev.set()
+    def sigterm_handler(*args):
+        event = shared.event('term')
+        event.set()
 
-    def sigusr1_handler(signum, frame):
-        ev = shared.event('usr1')
-        ev.set()
+    def sigusr1_handler(*args):
+        event = shared.event('usr1')
+        event.set()
 
-    lobj = Logger(sys.argv[0], logfile)
+    lobj = Logger(sys.argv[0])
     logger = lobj.get()
 
-    global shared
     shared = Shared()
 
     shared.add_log(logger)
@@ -54,7 +43,7 @@ def main():
 
     parser = argparse.ArgumentParser(prog='ams-publisherd')
     parser.add_argument('-q', dest='query', required=False, help='query for statistics for last n minutes',
-                       nargs='?', type=int, metavar='number of minutes', const=180)
+                        nargs='?', type=int, metavar='number of minutes', const=180)
     args = parser.parse_args()
 
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -70,11 +59,10 @@ def main():
             confopts = parse_config()
             shared = Shared(confopts=confopts)
             uid, gid = get_userids(shared.general['runasuser'])
-            sock = setup_statssocket(shared.general['statsocket'], uid, gid)
+            sock = setup_statssocket(uid, gid)
             init_dirq_consume(shared.workers, daemonized=False, sockstat=sock)
         except KeyboardInterrupt:
             raise SystemExit(1)
-
 
 
 main()
