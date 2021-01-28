@@ -11,8 +11,6 @@ from argo_nagios_ams_publisher.run import init_dirq_consume
 from argo_nagios_ams_publisher.stats import query_stats, setup_statssocket
 from argo_nagios_ams_publisher.shared import Shared
 
-LOGFILE = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
-
 
 def get_userids(user):
     return pwd.getpwnam(user)[2], pwd.getpwnam(user)[3]
@@ -34,7 +32,7 @@ def main():
         event = shared.event('usr1')
         event.set()
 
-    lobj = Logger(sys.argv[0], LOGFILE)
+    lobj = Logger(sys.argv[0])
     logger = lobj.get()
 
     shared = Shared()

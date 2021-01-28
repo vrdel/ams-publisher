@@ -27,8 +27,8 @@ def init_dirq_consume(workers, daemonized, sockstat):
     localevents = dict()
     manager = Manager()
 
-    for w in workers:
-        shared = Shared(worker=w)
+    for worker in workers:
+        shared = Shared(worker=worker)
 
         # Create dictionaries that hold number of (published, consumed) messages
         # in seconds from epoch. Second from epoch is a key and number of
@@ -39,15 +39,15 @@ def init_dirq_consume(workers, daemonized, sockstat):
         # Counter is read on queries from socket.
         # collections.Counter cannot be shared between processes so
         # manager.dict() is used.
-        shared.statint[w]['consumed'] = manager.dict()
-        shared.statint[w]['published'] = manager.dict()
+        shared.statint[worker]['consumed'] = manager.dict()
+        shared.statint[worker]['published'] = manager.dict()
         shared.reload_confopts = manager.dict()
 
         # Create integer counters that will be shared across spawned processes
         # and that will keep track of number of published and consumed messages.
         # Counter is read on perodic status reports and signal SIGUSR1.
-        shared.statint[w]['consumed_periodic'] = Value('i', 1)
-        shared.statint[w]['published_periodic'] = Value('i', 1)
+        shared.statint[worker]['consumed_periodic'] = Value('i', 1)
+        shared.statint[worker]['published_periodic'] = Value('i', 1)
 
         if not getattr(shared, 'runtime', False):
             shared.runtime = dict()
@@ -68,21 +68,21 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
             shared.runtime.update(publisher=MessagingPublisher)
 
-        localevents.update({'lck-' + w: Lock()})
-        localevents.update({'usr1-' + w: Event()})
-        localevents.update({'period-' + w: Event()})
-        localevents.update({'term-' + w: Event()})
-        localevents.update({'termth-' + w: ThreadEvent()})
-        localevents.update({'giveup-' + w: Event()})
+        localevents.update({'lck-' + worker: Lock()})
+        localevents.update({'usr1-' + worker: Event()})
+        localevents.update({'period-' + worker: Event()})
+        localevents.update({'term-' + worker: Event()})
+        localevents.update({'termth-' + worker: ThreadEvent()})
+        localevents.update({'giveup-' + worker: Event()})
         shared.runtime.update(evsleep=evsleep)
         shared.runtime.update(daemonized=daemonized)
 
-        consumers.append(ConsumerQueue(events=localevents, worker=w))
+        consumers.append(ConsumerQueue(events=localevents, worker=worker))
         if not daemonized:
             consumers[-1].daemon = False
         consumers[-1].start()
 
-    if w:
+    if worker:
         localevents.update({'lck-stats': Lock()})
         localevents.update({'usr1-stats': Event()})
         localevents.update({'term-stats': Event()})
@@ -96,21 +96,21 @@ def init_dirq_consume(workers, daemonized, sockstat):
     while True:
         if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])
-            for c in consumers:
-                localevents['period-' + c.name].set()
+            for consumer in consumers:
+                localevents['period-' + consumer.name].set()
                 prevstattime = int(time.time())
 
-        for c in consumers:
-            if localevents['giveup-' + c.name].is_set():
-                c.terminate()
-                c.join(1)
-                localevents['giveup-' + c.name].clear()
+        for consumer in consumers:
+            if localevents['giveup-' + consumer.name].is_set():
+                consumer.terminate()
+                consumer.join(1)
+                localevents['giveup-' + consumer.name].clear()
 
         if shared.event('term').is_set():
-            for c in consumers:
-                localevents['term-' + c.name].set()
-                localevents['termth-' + c.name].set()
-                c.join(1)
+            for consumer in consumers:
+                localevents['term-' + consumer.name].set()
+                localevents['termth-' + consumer.name].set()
+                consumer.join(1)
             localevents['term-stats'].set()
             localevents['termth-stats'].set()
             statsp.join(1)
@@ -118,15 +118,15 @@ def init_dirq_consume(workers, daemonized, sockstat):
 
         if shared.event('usr1').is_set():
             shared.log.info('Started %s' % shared.runtime['started'])
-            for c in consumers:
-                localevents['usr1-' + c.name].set()
+            for consumer in consumers:
+                localevents['usr1-' + consumer.name].set()
             localevents['usr1-stats'].set()
             shared.event('usr1').clear()
 
         try:
             time.sleep(evsleep)
         except KeyboardInterrupt:
-            for c in consumers:
-                c.join(1)
+            for consumer in consumers:
+                consumer.join(1)
             statsp.join(1)
             raise SystemExit(0)
