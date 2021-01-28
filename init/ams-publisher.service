@@ -9,7 +9,6 @@ KillMode=process
 User=nagios
 Group=nagios
 SyslogIdentifier=ams-publisher
-StandardError=syslog
 RuntimeDirectory=argo-nagios-ams-publisher
 
 [Install]

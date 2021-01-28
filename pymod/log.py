@@ -3,12 +3,13 @@ import logging.handlers
 import sys
 import os.path
 
-logname = 'ams-publisher'
-logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
+LOGNAME = 'ams-publisher'
+LOGFILE = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
+
 
 class Logger(object):
     """
-       Logger objects with initialized File and Syslog logger.
+       Logger objects with initialized File logger.
     """
     logger = None
 
@@ -18,35 +19,24 @@ class Logger(object):
         lv = logging.INFO
 
         logging.basicConfig(format=lfs, level=lv, stream=sys.stdout)
-        self.logger = logging.getLogger(logname)
+        self.logger = logging.getLogger(LOGNAME)
 
-    def _init_syslog(self):
-        lfs = '%(name)s[%(process)s]: %(levelname)s - %(message)s'
-        lf = logging.Formatter(lfs)
-        lv = logging.INFO
-
-        sh = logging.handlers.SysLogHandler('/dev/log', logging.handlers.SysLogHandler.LOG_USER)
-        sh.setFormatter(lf)
-        sh.setLevel(lv)
-        self.logger.addHandler(sh)
-
-    def _init_filelog(self, logfile):
+    def _init_filelog(self):
         lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s - %(message)s'
         lf = logging.Formatter(fmt=lfs, datefmt='%Y-%m-%d %H:%M:%S')
         lv = logging.INFO
 
-        sf = logging.FileHandler(logfile)
+        sf = logging.FileHandler(LOGFILE)
         self.logger.fileloghandle = sf.stream
         sf.setFormatter(lf)
         sf.setLevel(lv)
         self.logger.addHandler(sf)
 
-    def __init__(self, caller, logfile):
+    def __init__(self, caller):
         self._caller = os.path.basename(caller)
         self._init_stdout()
         try:
-            self._init_filelog(logfile)
-            self._init_syslog()
+            self._init_filelog()
         except (OSError, IOError) as e:
             sys.stderr.write('WARNING ' + self._caller + ' Error initializing loggers - ' + str(e) + '\n')
 
