@@ -44,7 +44,6 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 
 %files -f INSTALLED_FILES
 %defattr(-,root,root,-)
@@ -54,7 +53,6 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/run/%{name}/
 %{python3_sitelib}/%{underscore %{name}}/*.py
 %defattr(-,nagios,nagios,-)
 %dir %{_localstatedir}/log/%{name}/
-%attr(0755,nagios,nagios) %dir %{_localstatedir}/run/%{name}/
 %dir %{_localstatedir}/spool/%{name}/
 
 %post
@@ -65,12 +63,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %preun
 %systemd_preun ams-publisher.service
-
-%postun
-if [ "$1" = 0 ]; then
-	test -d  %{_localstatedir}/run/%{name}/ && rm -rf %{_localstatedir}/run/%{name}/
-fi
-exit 0
 
 %pre
 if ! /usr/bin/id nagios &>/dev/null; then
