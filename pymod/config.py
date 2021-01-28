@@ -55,7 +55,6 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishmsgfile': eval(config.get(section, 'PublishMsgFile'))})
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
-                    confopts['general'].update({'statsocket': config.get(section, 'StatSocket')})
                     confopts['general'].update({'timezone': config.get(section, 'TimeZone')})
                     try:
                         tz = timezone(confopts['general']['timezone'])
