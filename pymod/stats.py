@@ -77,7 +77,7 @@ def query_stats(last_minutes):
 
 
 def setup_statssocket(path, uid, gid):
-    global shared
+    shared = Shared()
 
     if os.path.exists(path):
         os.unlink(path)
