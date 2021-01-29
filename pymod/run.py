@@ -82,6 +82,10 @@ def init_dirq_consume(workers, daemonized, sockstat):
             consumers[-1].daemon = False
         consumers[-1].start()
 
+    shared = Shared()
+    workers_name = ', '.join(consumer.name for consumer in consumers)
+    shared.log.info('Started {} workers'.format(workers_name))
+
     if worker:
         localevents.update({'lck-stats': Lock()})
         localevents.update({'usr1-stats': Event()})
@@ -93,9 +97,6 @@ def init_dirq_consume(workers, daemonized, sockstat):
         statsp.start()
 
     prevstattime = int(time.time())
-    shared = Shared()
-    workers_name = ', '.join(consumer.name for consumer in consumers)
-    shared.log.info('Started {} workers'.format(workers_name))
     while True:
         if int(time.time()) - prevstattime >= shared.general['statseveryhour'] * 3600:
             shared.log.info('Periodic report (every %sh)' % shared.general['statseveryhour'])

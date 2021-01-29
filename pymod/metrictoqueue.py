@@ -14,8 +14,7 @@ import sys
 import datetime
 import pytz
 
-conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
-logfile = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
+CONF = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
 
 
 def seteuser(user):
@@ -47,7 +46,7 @@ def build_msg(args, *headers):
 
 def main():
     parser = argparse.ArgumentParser()
-    lobj = log.Logger(sys.argv[0], logfile)
+    lobj = log.Logger(sys.argv[0])
     logger = lobj.get()
     confopts = config.parse_config(logger)
     nagioshost = confopts['general']['host']
