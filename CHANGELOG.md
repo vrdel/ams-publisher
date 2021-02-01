@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9] - 2021-02-01
+
+### Changed
+
+* ARGO-2929 Let systemd handle runtime directory
+* ARGO-2855 ams-publisher py3 switch
+
 ## [0.3.8] - 2020-10-08
 
 ### Fixed

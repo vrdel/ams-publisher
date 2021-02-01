@@ -75,6 +75,9 @@ if ! /usr/bin/getent group nagiocmd &>/dev/null; then
 fi
 
 %changelog
+* Mon Feb 1 2021 Daniel Vrcic <dvrcic@srce.hr> - 0.3.9-1%{?dist}
+- ARGO-2855 ams-publisher py3 switch
+- ARGO-2929 Let systemd handle runtime directory
 * Thu Oct  8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.8-1%{?dist}
 - remove leftovers from erroneous SIGHUP handling
 * Wed Jul  8 2020 Daniel Vrcic <dvrcic@srce.hr> - 0.3.7-1%{?dist}
