@@ -4,10 +4,10 @@
 %define stripc() %(echo %1 | sed 's/el7.centos/el7/')
 %define mydist %{stripc %{dist}}
 
-Name:           argo-nagios-ams-publisher
+Name:           ams-publisher
+Summary:        Bridge from Nagios/Sensu to the ARGO Messaging system
 Version:        0.3.9
 Release:        1%{mydist}
-Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
 License:        ASL 2.0
@@ -27,9 +27,43 @@ Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
 
-
 %description
+Bridge from Nagios/Sensu to the ARGO Messaging system
+
+
+%package -n argo-sensu-%{name}
+Summary: Bridge from Sensu to the ARGO Messaging system
+
+%description -n argo-sensu-%{name}
+Bridge from Sensu to the ARGO Messaging system
+
+%files -n argo-sensu-%{name} -f INSTALLED_FILES
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
+%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
+%dir %{python3_sitelib}/%{underscore %{name}}
+%{python3_sitelib}/%{underscore %{name}}/*.py
+%defattr(-,sensu,sensu,-)
+%dir %{_localstatedir}/log/%{name}/
+%dir %{_localstatedir}/spool/%{name}/
+
+
+%package -n argo-nagios-%{name}
+Summary: Bridge from Nagios to the ARGO Messaging system
+
+%description -n argo-nagios-%{name}
 Bridge from Nagios to the ARGO Messaging system
+
+%files -n argo-nagios-%{name} -f INSTALLED_FILES
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
+%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
+%dir %{python3_sitelib}/%{underscore %{name}}
+%{python3_sitelib}/%{underscore %{name}}/*.py
+%defattr(-,nagios,nagios,-)
+%dir %{_localstatedir}/log/%{name}/
+%dir %{_localstatedir}/spool/%{name}/
+
 
 %prep
 %setup -q
@@ -44,16 +78,6 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
-
-%files -f INSTALLED_FILES
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
-%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
-%dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py
-%defattr(-,nagios,nagios,-)
-%dir %{_localstatedir}/log/%{name}/
-%dir %{_localstatedir}/spool/%{name}/
 
 %post
 %systemd_postun_with_restart ams-publisher.service
