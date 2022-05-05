@@ -1,6 +1,6 @@
 import threading
 import time
-from argo_nagios_ams_publisher.shared import Shared
+from ams_publisher.shared import Shared
 
 from datetime import datetime
 

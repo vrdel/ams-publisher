@@ -1,5 +1,5 @@
 #!/usr/bin/python3
 
-from argo_nagios_ams_publisher import metrictoqueue
+from ams_publisher import metrictoqueue
 
 metrictoqueue.main()

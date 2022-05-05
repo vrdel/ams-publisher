@@ -4,8 +4,8 @@ from messaging.message import Message
 from messaging.error import MessageError
 from messaging.queue.dqs import DQS
 
-from argo_nagios_ams_publisher import config
-from argo_nagios_ams_publisher import log
+from ams_publisher import config
+from ams_publisher import log
 
 import argparse
 import os

@@ -7,8 +7,8 @@ from io import BytesIO
 
 from argo_ams_library.ams import ArgoMessagingService
 from argo_ams_library.amsmsg import AmsMessage
-from argo_nagios_ams_publisher.shared import Shared
-from argo_nagios_ams_publisher.stats import StatSig
+from ams_publisher.shared import Shared
+from ams_publisher.stats import StatSig
 from argo_ams_library.amsexceptions import AmsConnectionException, AmsServiceException
 
 

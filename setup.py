@@ -31,8 +31,8 @@ setup(
     description='Bridge from Nagios to the ARGO Messaging system',
     long_description='Bridge from Nagios to the ARGO Messaging system',
     url='https://github.com/ARGOeu/argo-nagios-ams-publisher',
-    package_dir={'argo_nagios_ams_publisher': 'pymod/'},
-    packages=['argo_nagios_ams_publisher'],
+    package_dir={'ams_publisher': 'pymod/'},
+    packages=['ams_publisher'],
     data_files=[('/etc/argo-nagios-ams-publisher/', ['config/ams-publisher.conf', 'config/metric_data.avsc']),
                 ('/usr/lib/systemd/system/', ['init/ams-publisher.service']) if is_c7() else \
                 ('/etc/init.d/', ['init/ams-publisher'])],
