@@ -3,6 +3,6 @@ include bin/*
 include pymod/*
 include helpers/*
 include init/*
-include argo-nagios-ams-publisher.spec 
+include ams-publisher.spec
 
 recursive-exclude pymodule *.pyc *.pyo

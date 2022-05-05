@@ -1,4 +1,4 @@
-PKGNAME=argo-nagios-ams-publisher
+PKGNAME=ams-publisher
 SPECFILE=${PKGNAME}.spec
 
 PKGVERSION=$(shell grep -s '^Version:' $(SPECFILE) | sed -e 's/Version: *//')

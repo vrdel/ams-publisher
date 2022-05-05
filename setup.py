@@ -1,7 +1,7 @@
 from distutils.core import setup
 import platform
 
-NAME = 'argo-nagios-ams-publisher'
+NAME = 'ams-publisher'
 
 def is_c7():
     dist = platform.dist()
