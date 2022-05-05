@@ -14,7 +14,7 @@ import sys
 import datetime
 import pytz
 
-CONF = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
+CONF = '/etc/ams-publisher/ams-publisher.conf'
 
 
 def seteuser(user):

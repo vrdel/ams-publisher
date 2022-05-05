@@ -15,7 +15,7 @@ import pytz
 import sys
 
 
-CONF = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
+CONF = '/etc/ams-publisher/ams-publisher.conf'
 
 
 def seteuser(user):

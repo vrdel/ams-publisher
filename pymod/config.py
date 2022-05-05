@@ -2,7 +2,7 @@ import configparser
 import sys
 from pytz import timezone, UnknownTimeZoneError
 
-conf = '/etc/argo-nagios-ams-publisher/ams-publisher.conf'
+conf = '/etc/ams-publisher/ams-publisher.conf'
 
 
 def get_queue_granul(queue):
