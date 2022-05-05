@@ -27,7 +27,7 @@ Complete list of features are:
 
 ## Installation
 
-Component is supported on CentOS 6 and CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
+Component is supported on CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
 
 	yum install -y argo-nagios-ams-publisher
 
