@@ -64,16 +64,6 @@ rm -rf $RPM_BUILD_ROOT
 %preun
 %systemd_preun ams-publisher.service
 
-%pre
-if ! /usr/bin/id nagios &>/dev/null; then
-	/usr/sbin/useradd -r -m -d /var/log/nagios -s /bin/sh -c "nagios" nagios || \
-        logger -t nagios/rpm "Unexpected error adding user \"nagios\". Aborting installation."
-fi
-if ! /usr/bin/getent group nagiocmd &>/dev/null; then
-	/usr/sbin/groupadd nagiocmd &>/dev/null || \
-        logger -t nagios/rpm "Unexpected error adding group \"nagiocmd\". Aborting installation."
-fi
-
 %changelog
 * Mon Feb 1 2021 Daniel Vrcic <dvrcic@srce.hr> - 0.3.9-1%{?dist}
 - ARGO-2855 ams-publisher py3 switch
