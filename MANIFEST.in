@@ -2,6 +2,8 @@ include config/*
 include bin/*
 include pymod/*
 include init/ams-publisher.service
-include ams-publisher.spec
+include argo-nagios-ams-publisher.spec
+include argo-sensu-ams-publisher.spec
+include setup.py
 
 recursive-exclude pymodule *.pyc *.pyo

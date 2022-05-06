@@ -11,12 +11,11 @@ rpm: dist
 
 dist:
 	rm -rf dist build
-	python3 setup.py sensu
-	mv -f dist/${PKGNAME}-${PKGVERSION}.tar.gz argo-sensu-${PKGNAME}-${PKGVERSION}.tar.gz
+	python3 setup.nagios.py custombuild
+	mv -f dist/argo-nagios-${PKGNAME}-${PKGVERSION}.tar.gz argo-nagios-${PKGNAME}-${PKGVERSION}.tar.gz
 	rm -rf dist build
-	python3 setup.py nagios
-	mv -f dist/${PKGNAME}-${PKGVERSION}.tar.gz argo-nagios-${PKGNAME}-${PKGVERSION}.tar.gz
-	rm -rf dist
+	python3 setup.sensu.py custombuild
+	mv -f dist/argo-sensu-${PKGNAME}-${PKGVERSION}.tar.gz argo-sensu-${PKGNAME}-${PKGVERSION}.tar.gz
 
 sources: dist
 
