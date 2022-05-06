@@ -30,6 +30,20 @@ Requires(postun): systemd
 %description
 Bridge from Nagios/Sensu to the ARGO Messaging system
 
+%prep
+%setup -q
+
+%build
+%{py3_build}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%{py3_install "--record=INSTALLED_FILES"}
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
+
 
 %package -n argo-sensu-%{name}
 Summary: Bridge from Sensu to the ARGO Messaging system
@@ -64,20 +78,6 @@ Bridge from Nagios to the ARGO Messaging system
 %dir %{_localstatedir}/log/%{name}/
 %dir %{_localstatedir}/spool/%{name}/
 
-
-%prep
-%setup -q
-
-%build
-%{py3_build}
-
-%install
-rm -rf $RPM_BUILD_ROOT
-%{py3_install "--record=INSTALLED_FILES"}
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
 
 %post
 %systemd_postun_with_restart ams-publisher.service
