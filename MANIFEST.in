@@ -1,8 +1,7 @@
 include config/*
 include bin/*
 include pymod/*
-include helpers/*
-include init/*
+include init/ams-publisher.service
 include ams-publisher.spec
 
 recursive-exclude pymodule *.pyc *.pyo
