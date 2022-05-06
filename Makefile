@@ -4,10 +4,10 @@ SPECFILE=${PKGNAME}.spec
 PKGVERSION=$(shell grep -s '^Version:' $(SPECFILE) | sed -e 's/Version: *//')
 
 srpm: dist
-	rpmbuild -ts ${PKGNAME}-${PKGVERSION}.tar.gz
+	rpmbuild -ts *.tar.gz
 
 rpm: dist
-	rpmbuild -ta ${PKGNAME}-${PKGVERSION}.tar.gz
+	rpmbuild -ta *.tar.gz
 
 dist:
 	rm -rf dist build
