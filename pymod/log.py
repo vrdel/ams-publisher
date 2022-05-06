@@ -4,7 +4,7 @@ import sys
 import os.path
 
 LOGNAME = 'ams-publisher'
-LOGFILE = '/var/log/argo-nagios-ams-publisher/ams-publisher.log'
+LOGFILE = '/var/log/ams-publisher/ams-publisher.log'
 
 
 class Logger(object):
