@@ -10,7 +10,7 @@ rpm: dist
 	rpmbuild -ta ${PKGNAME}-${PKGVERSION}.tar.gz
 
 dist:
-	rm -rf dist
+	rm -rf dist build
 	python3 setup.py sdist
 	mv -f dist/${PKGNAME}-${PKGVERSION}.tar.gz .
 	rm -rf dist
@@ -20,4 +20,5 @@ sources: dist
 clean:
 	rm -rf ${PKGNAME}-${PKGVERSION}.tar.gz
 	rm -f MANIFEST
+	rm -rf build
 	rm -rf dist
