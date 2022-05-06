@@ -12,7 +12,7 @@ class sensu_build(_build_py):
 
     def __init__(self, args):
         super(_build_py, self).__init__(args)
-        shutil.copy('init/ams-publisher-nagios.service', 'init/ams-publisher.service')
+        shutil.copy('init/ams-publisher-sensu.service', 'init/ams-publisher.service')
         self.run_command('build')
         self.run_command('sdist')
         os.remove('init/ams-publisher.service')
@@ -50,6 +50,8 @@ setup(
     url='https://github.com/ARGOeu/argo-nagios-ams-publisher',
     package_dir={'ams_publisher': 'pymod/'},
     packages=['ams_publisher'],
+    data_files=[('/etc/ams-publisher/', ['config/ams-publisher.conf', 'config/metric_data.avsc']),
+                ('/usr/lib/systemd/system/', ['init/ams-publisher.service'])],
     scripts=['bin/ams-alarm-to-queue', 'bin/ams-metric-to-queue',
              'bin/ams-publisherd'],
     cmdclass={
