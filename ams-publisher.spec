@@ -4,7 +4,7 @@
 %define stripc() %(echo %1 | sed 's/el7.centos/el7/')
 %define mydist %{stripc %{dist}}
 
-Name:           ams-publisher
+Name:           SPECNAME-ams-publisher
 Summary:        Bridge from Nagios/Sensu to the ARGO Messaging system
 Version:        0.3.9
 Release:        1%{mydist}
@@ -39,45 +39,24 @@ Bridge from Nagios/Sensu to the ARGO Messaging system
 %install
 rm -rf $RPM_BUILD_ROOT
 %{py3_install "--record=INSTALLED_FILES"}
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
+install --directory --mode 755 %{buildroot}/%{_sysconfdir}/ams-publisher/
+install --directory --mode 755 %{buildroot}/%{_localstatedir}/log/ams-publisher/
+install --directory --mode 755 %{buildroot}/%{_localstatedir}/spool/ams-publisher/metrics/
+install --directory --mode 755 %{buildroot}/%{_localstatedir}/spool/ams-publisher/alarms/
 
-
-%package -n argo-sensu-%{name}
-Summary: Bridge from Sensu to the ARGO Messaging system
-
-%description -n argo-sensu-%{name}
+%description
 Bridge from Sensu to the ARGO Messaging system
 
-%files -n argo-sensu-%{name} -f INSTALLED_FILES
+%files -f INSTALLED_FILES
 %defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
-%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
-%dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py
-%defattr(-,sensu,sensu,-)
-%dir %{_localstatedir}/log/%{name}/
-%dir %{_localstatedir}/spool/%{name}/
-
-
-%package -n argo-nagios-%{name}
-Summary: Bridge from Nagios to the ARGO Messaging system
-
-%description -n argo-nagios-%{name}
-Bridge from Nagios to the ARGO Messaging system
-
-%files -n argo-nagios-%{name} -f INSTALLED_FILES
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
-%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
-%dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py
-%defattr(-,nagios,nagios,-)
-%dir %{_localstatedir}/log/%{name}/
-%dir %{_localstatedir}/spool/%{name}/
-
+%config(noreplace) %{_sysconfdir}/ams-publisher/ams-publisher.conf
+%config(noreplace) %{_sysconfdir}/ams-publisher/metric_data.avsc
+%dir %{python3_sitelib}/ams_publisher
+%{python3_sitelib}/ams_publisher/*.py
+%{_unitdir}/ams-publisher.service
+%defattr(-,SPECPERM,SPECPERM,-)
+%dir %{_localstatedir}/log/ams-publisher/
+%dir %{_localstatedir}/spool/ams-publisher/
 
 %post
 %systemd_postun_with_restart ams-publisher.service
