@@ -1,8 +1,22 @@
 import configparser
 import sys
+import glob
+
 from pytz import timezone, UnknownTimeZoneError
 
-conf = '/etc/ams-publisher/ams-publisher.conf'
+
+def get_conffile(logger=None):
+    confwildcard = '/etc/ams-publisher/ams-publisher*.conf'
+    matches = glob.glob(confwildcard)
+    if matches:
+        return matches[0]
+    else:
+        if logger:
+            logger.error('Missing config file, pattern %s not found' % confwildcard)
+            raise SystemExit(1)
+        else:
+            sys.stderr.write('Missing config file, pattern %s not found\n' % confwildcard)
+            raise SystemExit(1)
 
 
 def get_queue_granul(queue):
@@ -27,6 +41,8 @@ def parse_config(logger=None):
     """
     reqsections = set(['queue_', 'topic_', 'general'])
     confopts = dict()
+
+    conf = get_conffile(logger)
 
     try:
         config = configparser.ConfigParser()
