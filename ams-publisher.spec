@@ -41,8 +41,7 @@ rm -rf $RPM_BUILD_ROOT
 %{py3_install}
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/ams-publisher/
 install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/ams-publisher/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publisher/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publisher/alarms/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publisher/
 
 
 %package -n argo-nagios-ams-publisher
