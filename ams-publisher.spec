@@ -71,7 +71,7 @@ Bridge from Nagios to the ARGO Messaging system
 %systemd_postun_with_restart ams-publisher-nagios.service
 
 %preun -n argo-nagios-ams-publisher
-%systemd_preun ams-publisher.service
+%systemd_preun ams-publisher-nagios.service
 
 
 %package -n argo-sensu-ams-publisher
@@ -97,10 +97,10 @@ Bridge from Sensu to the ARGO Messaging system
 %dir %{_localstatedir}/spool/ams-publisher/
 
 %post -n argo-sensu-ams-publisher
-%systemd_postun_with_restart ams-publisher-nagios.service
+%systemd_postun_with_restart ams-publisher-sensu.service
 
 %preun -n argo-sensu-ams-publisher
-%systemd_preun ams-publisher.service
+%systemd_preun ams-publisher-sensu.service
 
 
 %clean
