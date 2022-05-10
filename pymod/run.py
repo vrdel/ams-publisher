@@ -2,11 +2,11 @@ import avro.schema
 import datetime
 import time
 
-from argo_nagios_ams_publisher.publish import FilePublisher, MessagingPublisher
-from argo_nagios_ams_publisher.consume import ConsumerQueue
-from argo_nagios_ams_publisher.stats import StatSock
-from argo_nagios_ams_publisher.shared import Shared
-from argo_nagios_ams_publisher.config import parse_config
+from ams_publisher.publish import FilePublisher, MessagingPublisher
+from ams_publisher.consume import ConsumerQueue
+from ams_publisher.stats import StatSock
+from ams_publisher.shared import Shared
+from ams_publisher.config import parse_config
 
 from multiprocessing import Event, Lock, Value, Manager
 from threading import Event as ThreadEvent

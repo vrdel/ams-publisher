@@ -5,13 +5,13 @@
 %define mydist %{stripc %{dist}}
 
 Name:           ams-publisher
+Summary:        Bridge from Sensu/Nagios to the ARGO Messaging system
 Version:        0.3.9
 Release:        1%{mydist}
-Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
 License:        ASL 2.0
-URL:            https://github.com/ARGOeu/ams-publisher
+URL:            https://github.com/ARGOeu/argo-nagios-ams-publisher
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -27,52 +27,87 @@ Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
 
-
-%description
-Bridge from Nagios to the ARGO Messaging system
-
 %prep
 %setup -q
+
+%description
+Bridge from Sensu/Nagios to the ARGO Messaging system
 
 %build
 %{py3_build}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{py3_install "--record=INSTALLED_FILES"}
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/%{name}/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/metrics/
-install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/%{name}/alarms/
+%{py3_install}
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_sysconfdir}/ams-publisher/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/log/ams-publisher/
+install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publisher/
 
-%files -f INSTALLED_FILES
+
+%package -n argo-nagios-ams-publisher
+Summary:   Bridge from Nagios to the ARGO Messaging system
+Conflicts: argo-sensu-ams-publisher
+Requires:  nagios
+
+%description -n argo-nagios-ams-publisher
+Bridge from Nagios to the ARGO Messaging system
+
+%files -n argo-nagios-ams-publisher
 %defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/ams-publisher.conf
-%config(noreplace) %{_sysconfdir}/%{name}/metric_data.avsc
-%dir %{python3_sitelib}/%{underscore %{name}}
-%{python3_sitelib}/%{underscore %{name}}/*.py
+%{_bindir}/ams-alarm-to-queue
+%{_bindir}/ams-metric-to-queue
+%{_bindir}/ams-publisherd
+%config(noreplace) %{_sysconfdir}/ams-publisher/ams-publisher-nagios.conf
+%config(noreplace) %{_sysconfdir}/ams-publisher/metric_data.avsc
+%dir %{python3_sitelib}/ams_publisher
+%{python3_sitelib}/ams_publisher/*.py
+%{python3_sitelib}/ams_publisher/__pycache__/
+%{python3_sitelib}/*.egg-info
+%{_unitdir}/ams-publisher-nagios.service
 %defattr(-,nagios,nagios,-)
-%dir %{_localstatedir}/log/%{name}/
-%dir %{_localstatedir}/spool/%{name}/
+%dir %{_localstatedir}/log/ams-publisher/
+%dir %{_localstatedir}/spool/ams-publisher/
 
-%post
-%systemd_postun_with_restart ams-publisher.service
+%post -n argo-nagios-ams-publisher
+%systemd_postun_with_restart ams-publisher-nagios.service
+
+%preun -n argo-nagios-ams-publisher
+%systemd_preun ams-publisher-nagios.service
+
+
+%package -n argo-sensu-ams-publisher
+Summary:   Bridge from Sensu to the ARGO Messaging system
+Conflicts: argo-nagios-ams-publisher
+Requires:  sensu-go-backend
+
+%description -n argo-sensu-ams-publisher
+Bridge from Sensu to the ARGO Messaging system
+
+%files -n argo-sensu-ams-publisher
+%defattr(-,root,root,-)
+%{_bindir}/ams-alarm-to-queue
+%{_bindir}/ams-metric-to-queue
+%{_bindir}/ams-publisherd
+%config(noreplace) %{_sysconfdir}/ams-publisher/ams-publisher-sensu.conf
+%config(noreplace) %{_sysconfdir}/ams-publisher/metric_data.avsc
+%dir %{python3_sitelib}/ams_publisher
+%{python3_sitelib}/ams_publisher/*.py
+%{python3_sitelib}/ams_publisher/__pycache__/
+%{python3_sitelib}/*.egg-info
+%{_unitdir}/ams-publisher-sensu.service
+%defattr(-,sensu,sensu,-)
+%dir %{_localstatedir}/log/ams-publisher/
+%dir %{_localstatedir}/spool/ams-publisher/
+
+%post -n argo-sensu-ams-publisher
+%systemd_postun_with_restart ams-publisher-sensu.service
+
+%preun -n argo-sensu-ams-publisher
+%systemd_preun ams-publisher-sensu.service
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
-
-%preun
-%systemd_preun ams-publisher.service
-
-%pre
-if ! /usr/bin/id nagios &>/dev/null; then
-	/usr/sbin/useradd -r -m -d /var/log/nagios -s /bin/sh -c "nagios" nagios || \
-        logger -t nagios/rpm "Unexpected error adding user \"nagios\". Aborting installation."
-fi
-if ! /usr/bin/getent group nagiocmd &>/dev/null; then
-	/usr/sbin/groupadd nagiocmd &>/dev/null || \
-        logger -t nagios/rpm "Unexpected error adding group \"nagiocmd\". Aborting installation."
-fi
 
 %changelog
 * Mon Feb 1 2021 Daniel Vrcic <dvrcic@srce.hr> - 0.3.9-1%{?dist}

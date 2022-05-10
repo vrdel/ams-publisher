@@ -6,9 +6,9 @@ from collections import deque
 from messaging.queue.dqs import DQS
 from multiprocessing import Process
 
-from argo_nagios_ams_publisher.purge import Purger
-from argo_nagios_ams_publisher.shared import Shared
-from argo_nagios_ams_publisher.stats import StatSig
+from ams_publisher.purge import Purger
+from ams_publisher.shared import Shared
+from ams_publisher.stats import StatSig
 
 
 class ConsumerQueue(StatSig, Process):

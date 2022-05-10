@@ -9,7 +9,7 @@ import time
 
 from threading import Thread
 from multiprocessing import Process
-from argo_nagios_ams_publisher.shared import Shared
+from ams_publisher.shared import Shared
 
 MAXCMDLENGTH = 128
 STATSOCK = '/run/argo-nagios-ams-publisher/sock'

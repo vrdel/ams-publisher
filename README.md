@@ -1,12 +1,12 @@
 # ams-publisher
 
-## Description 
+## Description
 
 `ams-publisher` is a component acting as bridge from Nagios to ARGO Messaging system. It's essential part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that wrap up results of Nagios probes/tests. It is running as a unix daemon and it consists of two subsystems:
-- queueing mechanism 
+- queueing mechanism
 - publishing/dispatching part
 
-Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
+Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned.
 
 Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also important to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue and since every result is represented as a one file on the file system, easily exhaustion of free inodes and therefore unusable monitoring instance.
 
@@ -23,20 +23,20 @@ Complete list of features are:
 - configurable bulk of messages sent to ARGO Messaging system
 - configurable retry attempts in case of network connection problems
 - purger that will keep queue only with sound data
-- message rate inspection of each worker for monitoring purposes 
+- message rate inspection of each worker for monitoring purposes
 
 ## Installation
 
-Component is supported on CentOS 6 and CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
+Component is supported on CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
 
 	yum install -y ams-publisher
 
 Component relies on:
-- `argo-ams-library` - interaction with ARGO Messaging 
+- `argo-ams-library` - interaction with ARGO Messaging
 - `avro` - avro serialization of messages' payload
 - `python-argparse` - ease build and parse of command line arguments
-- `python-daemon` - ease daemonizing of component 
-- `python-messaging` - CERN's library for directory based caching/queueing 
+- `python-daemon` - ease daemonizing of component
+- `python-messaging` - CERN's library for directory based caching/queueing
 - `pytz` - timezone manipulation
 
 
@@ -53,12 +53,12 @@ Component relies on:
 
 ## Configuration
 
-Central configuration is in `ams-publisher.conf`. Configuration consists of `[General]` section and `[Queue_<workername>], [Topic_<workername>]` section pairs. 
+Central configuration is in `ams-publisher.conf`. Configuration consists of `[General]` section and `[Queue_<workername>], [Topic_<workername>]` section pairs.
 
 ### General section
 
 ```
-[General] 
+[General]
 Host = NAGIOS.FQDN.EXAMPLE.COM
 RunAsUser = nagios
 StatsEveryHour = 24
@@ -71,8 +71,8 @@ StatSocket = /var/run/ams-publisher/sock
 
 * `Host` - FQDN of ARGO Monitoring instance that will be part of formed messages dispatched to ARGO Messaging system
 * `RunAsUser` - component will run with effective UID and GID of given user, usually `nagios`
-* `StatsEveryHour` - write periodic report in system logs. Example is given in [Running](Running) 
-* `PublishMsgFile`, `PublishMsgFileDir` - "file publisher" that is actually only for testing purposes. If enabled, messages will not be dispatched to ARGO Messaging System, instead it will just be appended to plain text file 
+* `StatsEveryHour` - write periodic report in system logs. Example is given in [Running](Running)
+* `PublishMsgFile`, `PublishMsgFileDir` - "file publisher" that is actually only for testing purposes. If enabled, messages will not be dispatched to ARGO Messaging System, instead it will just be appended to plain text file
 * `TimeZone` - construct timestamp of messages within specified timezone
 * `StatsSocket` - query socket that is used for inspection of rates of each worker. It used by the `ams-publisher` Nagios probe.
 
@@ -102,12 +102,12 @@ Avro = True
 AvroSchema = /etc/ams-publisher/metric_data.avsc
 Retry = 5
 Timeout = 60
-SleepRetry = 300 
+SleepRetry = 300
 ```
 
 * `[Queue_Metrics].Directory` - path of directory queue on the filesystem where local cache delivery tools write results of Nagios tests/probes.
 * `[Queue_Metrics].Rate` - local cache inspection rate. 10 means that cache will be inspected 10 times at a second because thats the number of status results expected from Nagios that will be picked up verly early. For low volume tenants this could be a lower number.
-* `[Queue_Metrics].Purge,PurgeEverySec,MaxTemp,MaxLock` - purge the staled elements of directory queue every `PurgeEverySec` seconds. It cleans the empty intermediate directories below directory queue path, temporary results that exceeded `MaxTemp` time and locked results that exceeded `MaxLock`. 
+* `[Queue_Metrics].Purge,PurgeEverySec,MaxTemp,MaxLock` - purge the staled elements of directory queue every `PurgeEverySec` seconds. It cleans the empty intermediate directories below directory queue path, temporary results that exceeded `MaxTemp` time and locked results that exceeded `MaxLock`.
 > It is advisable to leave `MaxLock = 0` which skips every result that have been transformed into a message and added into in-memory queue, but had not yet been dispatched.
 * `[Queue_Metrics].Granularity` - new intermediate directory in the toplevel directory queue path is created every `Granularity` seconds
 * `[Topic_Metrics].Host,Key,Project,Topic` - options needed for delivering of messages to ARGO Messaging system. `Host` designates the FQDN, `Key` is authorization token, `Project` represents a tenant name and `Topic` is final destination scoped to tenant
@@ -130,7 +130,7 @@ CentOS 7:
 systemctl start ams-publisher.service
 ```
 
-Component periodically reports rates of each worker in system logs. It does so every `StatsEveryHour`. 
+Component periodically reports rates of each worker in system logs. It does so every `StatsEveryHour`.
 ```
 2020-04-08 08:53:42 ams-publisher[963]: INFO - Periodic report (every 6.0h)
 2020-04-08 08:53:42 ams-publisher[983]: INFO - ConsumerQueue metrics: consumed 45787 msgs in 6.00 hours

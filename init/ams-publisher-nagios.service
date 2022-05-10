@@ -1,0 +1,15 @@
+[Unit]
+Description=Nagios AMS publisher
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ams-publisherd
+KillMode=process
+User=nagios
+Group=nagios
+SyslogIdentifier=ams-publisher
+RuntimeDirectory=ams-publisher
+
+[Install]
+WantedBy=multi-user.target

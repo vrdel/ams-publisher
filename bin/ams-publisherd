@@ -5,11 +5,11 @@ import pwd
 import signal
 import sys
 
-from argo_nagios_ams_publisher.config import parse_config
-from argo_nagios_ams_publisher.log import Logger
-from argo_nagios_ams_publisher.run import init_dirq_consume
-from argo_nagios_ams_publisher.stats import query_stats, setup_statssocket
-from argo_nagios_ams_publisher.shared import Shared
+from ams_publisher.config import parse_config
+from ams_publisher.log import Logger
+from ams_publisher.run import init_dirq_consume
+from ams_publisher.stats import query_stats, setup_statssocket
+from ams_publisher.shared import Shared
 
 
 def get_userids(user):
