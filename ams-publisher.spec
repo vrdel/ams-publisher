@@ -45,8 +45,9 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publi
 
 
 %package -n argo-nagios-ams-publisher
-Summary: Bridge from Nagios to the ARGO Messaging system
+Summary:   Bridge from Nagios to the ARGO Messaging system
 Conflicts: argo-sensu-ams-publisher
+Requires:  nagios
 
 %description -n argo-nagios-ams-publisher
 Bridge from Nagios to the ARGO Messaging system
@@ -75,8 +76,9 @@ Bridge from Nagios to the ARGO Messaging system
 
 
 %package -n argo-sensu-ams-publisher
-Summary: Bridge from Sensu to the ARGO Messaging system
+Summary:   Bridge from Sensu to the ARGO Messaging system
 Conflicts: argo-nagios-ams-publisher
+Requires:  sensu-go-backend
 
 %description -n argo-sensu-ams-publisher
 Bridge from Sensu to the ARGO Messaging system
