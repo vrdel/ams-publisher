@@ -12,7 +12,7 @@ from multiprocessing import Process
 from ams_publisher.shared import Shared
 
 MAXCMDLENGTH = 128
-STATSOCK = '/run/argo-nagios-ams-publisher/sock'
+STATSOCK = '/run/ams-publisher/sock'
 
 
 def query_stats(last_minutes):
