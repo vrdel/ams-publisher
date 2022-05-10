@@ -4,14 +4,14 @@
 %define stripc() %(echo %1 | sed 's/el7.centos/el7/')
 %define mydist %{stripc %{dist}}
 
-Name:           argo-nagios-ams-publisher
+Name:           ams-publisher
 Version:        0.3.9
 Release:        1%{mydist}
 Summary:        Bridge from Nagios to the ARGO Messaging system
 
 Group:          Network/Monitoring
 License:        ASL 2.0
-URL:            https://github.com/ARGOeu/argo-nagios-ams-publisher
+URL:            https://github.com/ARGOeu/ams-publisher
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
