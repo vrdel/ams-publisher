@@ -1,14 +1,14 @@
-# argo-nagios-ams-publisher
+# ams-publisher
 
 ## Description 
 
-`argo-nagios-ams-publisher` is a component acting as bridge from Nagios to ARGO Messaging system. It's essential part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that wrap up results of Nagios probes/tests. It is running as a unix daemon and it consists of two subsystems:
+`ams-publisher` is a component acting as bridge from Nagios to ARGO Messaging system. It's essential part of software stack running on ARGO monitoring instance and is responsible for forming and dispatching messages that wrap up results of Nagios probes/tests. It is running as a unix daemon and it consists of two subsystems:
 - queueing mechanism 
 - publishing/dispatching part
 
-Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `argo-nagios-ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
+Messages are cached in local directory queue with the help of OCSP Nagios commands and each queue is being monitored and consumed by the daemon. After configurable amount of accumulated messages, publisher that is associated to queue sends them to ARGO Messaging system and drains the queue. `ams-publisher` is written in multiprocessing manner so there is support for multiple (consume, publish) pairs where for each, new worker process will be spawned. 
 
-Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `argo-nagios-ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also important to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue and since every result is represented as a one file on the file system, easily exhaustion of free inodes and therefore unusable monitoring instance.
+Filling and draining of directory queue is asynchronous. Nagios delivers results on its own constant rate while `ams-publisher` consume and publish them on its own configurable constant rate. It's important to keep the two rates close enough so that the results don't pile up in the queue and leave it early. Component has a mechanism of inspection of rates and trends over time to keep the constants in sync. Also it's resilient to network issues so it will retry configurable number of times to send a messages to ARGO Messaging system. It's also important to note that consume and publish of the queue is a serial process so if publish is stopped, consume part of the worker will be also stopped. That could lead to pile up of results in the queue and since every result is represented as a one file on the file system, easily exhaustion of free inodes and therefore unusable monitoring instance.
 
 More about [Directory queue design](https://dirq.readthedocs.io/en/latest/queuesimple.html#directory-structure)
 
@@ -29,7 +29,7 @@ Complete list of features are:
 
 Component is supported on CentOS 6 and CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
 
-	yum install -y argo-nagios-ams-publisher
+	yum install -y ams-publisher
 
 Component relies on:
 - `argo-ams-library` - interaction with ARGO Messaging 
@@ -42,14 +42,14 @@ Component relies on:
 
 | File Types        | Destination                                        |
 |-------------------|----------------------------------------------------|
-| Configuration     | `/etc/argo-nagios-ams-publisher/ams-publisher.conf`|
+| Configuration     | `/etc/ams-publisher/ams-publisher.conf`|
 | Daemon component  | `/usr/bin/ams-publisherd`                          |
 | Cache delivery    | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
 | Init script (C6)  | `/etc/init.d/ams-publisher`                        |
 | SystemD Unit (C7) | `/usr/lib/systemd/system/ams-publisher.service`    |
-| Local caches      | `/var/spool/argo-nagios-ams-publisher/`            |
-| Inspection socket | `/var/run/argo-nagios-ams-publisher/sock`          |
-| Log files         | `/var/log/argo-nagios-ams-publisher/`              |
+| Local caches      | `/var/spool/ams-publisher/`            |
+| Inspection socket | `/var/run/ams-publisher/sock`          |
+| Log files         | `/var/log/ams-publisher/`              |
 
 ## Configuration
 
@@ -66,7 +66,7 @@ PublishMsgFile = False
 PublishMsgFileDir = /published
 PublishArgoMessaging = True
 TimeZone = UTC
-StatSocket = /var/run/argo-nagios-ams-publisher/sock
+StatSocket = /var/run/ams-publisher/sock
 ```
 
 * `Host` - FQDN of ARGO Monitoring instance that will be part of formed messages dispatched to ARGO Messaging system
@@ -83,7 +83,7 @@ Eachs `(queue, topic)` section pair designates one worker process. Two sections 
 Example of one such pair:
 ```
 [Queue_Metrics]
-Directory = /var/spool/argo-nagios-ams-publisher/metrics/
+Directory = /var/spool/ams-publisher/metrics/
 Rate = 10
 Purge = True
 PurgeEverySec = 300
@@ -99,7 +99,7 @@ Topic = metric_data
 Bulksize = 100
 MsgType = metric_data
 Avro = True
-AvroSchema = /etc/argo-nagios-ams-publisher/metric_data.avsc
+AvroSchema = /etc/ams-publisher/metric_data.avsc
 Retry = 5
 Timeout = 60
 SleepRetry = 300 
