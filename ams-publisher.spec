@@ -16,16 +16,6 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-BuildRequires:  python3-devel
-Requires:       python3-argo-ams-library
-Requires:       python3-avro
-Requires:       python3-dirq
-Requires:       python3-messaging
-Requires:       python36-pytz
-
-Requires(post):   systemd
-Requires(preun):  systemd
-Requires(postun): systemd
 
 %prep
 %setup -q
@@ -46,8 +36,18 @@ install --directory --mode 755 $RPM_BUILD_ROOT/%{_localstatedir}/spool/ams-publi
 
 %package -n argo-nagios-ams-publisher
 Summary:   Bridge from Nagios to the ARGO Messaging system
-Conflicts: argo-sensu-ams-publisher
-Requires:  nagios
+Conflicts:     argo-sensu-ams-publisher
+
+BuildRequires:    python3-devel
+Requires:         nagios
+Requires:         python3-argo-ams-library
+Requires:         python3-avro
+Requires:         python3-dirq
+Requires:         python3-messaging
+Requires:         python36-pytz
+Requires(post):   systemd
+Requires(preun):  systemd
+Requires(postun): systemd
 
 %description -n argo-nagios-ams-publisher
 Bridge from Nagios to the ARGO Messaging system
@@ -78,7 +78,17 @@ Bridge from Nagios to the ARGO Messaging system
 %package -n argo-sensu-ams-publisher
 Summary:   Bridge from Sensu to the ARGO Messaging system
 Conflicts: argo-nagios-ams-publisher
-Requires:  sensu-go-backend
+
+BuildRequires:    python3-devel
+Requires:         sensu-go-backend
+Requires:         python3-argo-ams-library
+Requires:         python3-avro
+Requires:         python3-dirq
+Requires:         python3-messaging
+Requires:         python36-pytz
+Requires(post):   systemd
+Requires(preun):  systemd
+Requires(postun): systemd
 
 %description -n argo-sensu-ams-publisher
 Bridge from Sensu to the ARGO Messaging system
