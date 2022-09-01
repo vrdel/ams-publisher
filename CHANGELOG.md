@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0] - 2022-09-1
+
+### Changed
+
+* ARGO-3754 Build two RPMS, Nagios and Sensu with appropriate runtime permission settings
+* ARGO-3825 List requires explicitly for each ams-publisher package
+
 ## [0.3.9] - 2021-02-01
 
 ### Changed
@@ -11,7 +18,7 @@
 
 ### Fixed
 
-* remove leftovers from erroneous SIGHUP handling 
+* remove leftovers from erroneous SIGHUP handling
 
 ## [0.3.7] - 2020-07-08
 
@@ -135,7 +142,7 @@
 
 ## [0.1.1] - 2017-03-14
 
-### Added 
+### Added
 
 * ARGO-732 Structure the body of alarm message as JSON object
 
