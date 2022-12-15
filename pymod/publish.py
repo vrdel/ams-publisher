@@ -49,7 +49,6 @@ class FilePublisher(Publish):
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.shared.topic['bulk'])])
                 published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-                self.shared.stats['published'] += self.shared.topic['bulk']
 
                 self.inmemq.rotate(-self.shared.topic['bulk'])
 
