@@ -49,7 +49,6 @@ class FilePublisher(Publish):
                     fp.writelines(['{0}\n'.format(str(self.inmemq[e][1]))
                                    for e in range(self.shared.topic['bulk'])])
                 published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
-
                 self.inmemq.rotate(-self.shared.topic['bulk'])
 
             return True, published
@@ -149,7 +148,7 @@ class MessagingPublisher(Publish):
 
         return self._extract_body(body, tag_fields, body_to_tagname)
 
-    def _write(self, msgs):
+    def write(self):
         t = 1
         lck = self.events['lck-' + self.name]
         published = set()
@@ -158,6 +157,15 @@ class MessagingPublisher(Publish):
                 while t <= self.shared.topic['retry']:
                     try:
                         lck.acquire(False)
+                        msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
+                        msgs = list(map(
+                            lambda m:
+                                AmsMessage(attributes={
+                                    'partition_date': m[0],
+                                    'type': self.shared.topic['msgtype']
+                                }, data=m[1]),
+                            msgs)
+                        )
                         self.ams.publish(self.shared.topic['topic'], msgs, timeout=self.shared.topic['timeout'])
                         published.update([self.inmemq[e][0] for e in range(self.shared.topic['bulk'])])
                         self._increm_intervalcounters(self.shared.topic['bulk'])
@@ -205,10 +213,3 @@ class MessagingPublisher(Publish):
                 return False, published
 
         return True, published
-
-    def write(self):
-        msgs = [self.construct_msg(self.inmemq[e][1]) for e in range(self.shared.topic['bulk'])]
-        msgs = list(map(lambda m: AmsMessage(attributes={'partition_date': m[0],
-                                                    'type': self.shared.topic['msgtype']},
-                                        data=m[1]), msgs))
-        return self._write(msgs)
