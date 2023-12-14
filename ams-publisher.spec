@@ -54,7 +54,6 @@ Bridge from Nagios to the ARGO Messaging system
 
 %files -n argo-nagios-ams-publisher
 %defattr(-,root,root,-)
-%{_bindir}/ams-alarm-to-queue
 %{_bindir}/ams-metric-to-queue
 %{_bindir}/ams-publisherd
 %config(noreplace) %{_sysconfdir}/ams-publisher/ams-publisher-nagios.conf
@@ -95,7 +94,6 @@ Bridge from Sensu to the ARGO Messaging system
 
 %files -n argo-sensu-ams-publisher
 %defattr(-,root,root,-)
-%{_bindir}/ams-alarm-to-queue
 %{_bindir}/ams-metric-to-queue
 %{_bindir}/ams-publisherd
 %config(noreplace) %{_sysconfdir}/ams-publisher/ams-publisher-sensu.conf
