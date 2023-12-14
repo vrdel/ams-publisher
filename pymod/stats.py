@@ -11,7 +11,7 @@ from threading import Thread
 from multiprocessing import Process
 from ams_publisher.shared import Shared
 
-MAXCMDLENGTH = 128
+MAXCMDLENGTH = 1024
 STATSOCK = '/run/ams-publisher/sock'
 
 
