@@ -6,7 +6,7 @@
 
 Name:           ams-publisher
 Summary:        Bridge from Sensu/Nagios to the ARGO Messaging system
-Version:        0.4.0
+Version:        0.4.1
 Release:        1%{mydist}
 
 Group:          Network/Monitoring
@@ -130,6 +130,8 @@ Bridge from Sensu to the ARGO Messaging system
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
+* Mon Mar 18 2024 Daniel Vrcic <dvrcic@srce.hr> - 0.4.1-1%{?dist}
+- refine spec by varying pytz dependency based on whether we're building on Centos7 or Rocky9
 * Thu Sep 1 2022 Daniel Vrcic <dvrcic@srce.hr> - 0.4.0-1%{?dist}
 - ARGO-3754 Build two RPMS, Nagios and Sensu with appropriate runtime permission settings
 - ARGO-3825 List requires explicitly for each ams-publisher package
