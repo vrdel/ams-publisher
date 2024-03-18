@@ -44,7 +44,12 @@ Requires:         python3-argo-ams-library
 Requires:         python3-avro
 Requires:         python3-dirq
 Requires:         python3-messaging
+%if 0%{?el7}
 Requires:         python36-pytz
+%endif
+%if 0%{?el9}
+Requires:         python3-pytz
+%endif
 Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
@@ -85,7 +90,12 @@ Requires:         python3-argo-ams-library
 Requires:         python3-avro
 Requires:         python3-dirq
 Requires:         python3-messaging
+%if 0%{?el7}
 Requires:         python36-pytz
+%endif
+%if 0%{?el9}
+Requires:         python3-pytz
+%endif
 Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
