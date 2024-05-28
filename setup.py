@@ -31,4 +31,5 @@ setup(
                                          'config/metric_data.avsc']),
                 ('/usr/lib/systemd/system/', ['init/ams-publisher-nagios.service',
                                               'init/ams-publisher-sensu.service'])],
-    scripts=['bin/ams-metric-to-queue', 'bin/ams-publisherd'])
+    scripts=['bin/ams-alarm-to-queue', 'bin/ams-metric-to-queue',
+             'bin/ams-publisherd'])

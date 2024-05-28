@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+
+from ams_publisher import alarmtoqueue
+
+alarmtoqueue.main()

@@ -44,7 +44,7 @@ Component relies on:
 |-------------------|----------------------------------------------------|
 | Configuration     | `/etc/ams-publisher/ams-publisher.conf`|
 | Daemon component  | `/usr/bin/ams-publisherd`                          |
-| Cache delivery    | `ams-metric-to-queue` |
+| Cache delivery    | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
 | Init script (C6)  | `/etc/init.d/ams-publisher`                        |
 | SystemD Unit (C7) | `/usr/lib/systemd/system/ams-publisher.service`    |
 | Local caches      | `/var/spool/ams-publisher/`            |
