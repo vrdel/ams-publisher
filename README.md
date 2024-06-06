@@ -27,9 +27,9 @@ Complete list of features are:
 
 ## Installation
 
-Component is supported on CentOS 7. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
+Component is supported on CentOS 7 and Rocky 9 Linux. RPM packages and all needed dependencies are available in ARGO repositories so installation of component simply narrows down to installing a package:
 
-	yum install -y ams-publisher
+	dnf install -y ams-publisher
 
 Component relies on:
 - `argo-ams-library` - interaction with ARGO Messaging
@@ -42,14 +42,13 @@ Component relies on:
 
 | File Types        | Destination                                        |
 |-------------------|----------------------------------------------------|
-| Configuration     | `/etc/ams-publisher/ams-publisher.conf`|
+| Configuration     | `/etc/ams-publisher/ams-publisher.conf`            |
 | Daemon component  | `/usr/bin/ams-publisherd`                          |
 | Cache delivery    | `/usr/bin/ams-alarm-to-queue, ams-metric-to-queue` |
-| Init script (C6)  | `/etc/init.d/ams-publisher`                        |
-| SystemD Unit (C7) | `/usr/lib/systemd/system/ams-publisher.service`    |
-| Local caches      | `/var/spool/ams-publisher/`            |
-| Inspection socket | `/var/run/ams-publisher/sock`          |
-| Log files         | `/var/log/ams-publisher/`              |
+| SystemD Unit (R9) | `/usr/lib/systemd/system/ams-publisher.service`    |
+| Local caches      | `/var/spool/ams-publisher/`                        |
+| Inspection socket | `/run/ams-publisher/sock`                          |
+| Log files         | `/var/log/ams-publisher/`                          |
 
 ## Configuration
 
@@ -120,12 +119,7 @@ SleepRetry = 300
 
 Components needs to be properly configured before starting it. At least one worker must be spawned so at least one directory queue needs to exist, Nagios should deliver results to it and publisher part of the worker needs to be associated to it. Afterward, it's just a matter of starting the service.
 
-CentOS 6:
-```
-/etc/init.d/ams-publisher start
-```
-
-CentOS 7:
+CentOS 7 and Rocky 9:
 ```
 systemctl start ams-publisher.service
 ```
