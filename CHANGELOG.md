@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.1] - 2024-06-06
+
+### Changed
+
+* ARGO-4445 Increase cmd query size for publisher probe inspection
+
+### Added
+
+* ARGO-4524 ams-publisher Rocky 9 RPM
+
 ## [0.4.0] - 2022-09-1
 
 ### Changed
