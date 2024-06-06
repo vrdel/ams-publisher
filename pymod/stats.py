@@ -11,7 +11,7 @@ from threading import Thread
 from multiprocessing import Process
 from ams_publisher.shared import Shared
 
-MAXCMDLENGTH = 128
+MAXCMDLENGTH = 1024
 STATSOCK = '/run/ams-publisher/sock'
 
 
@@ -30,7 +30,7 @@ def query_stats(last_minutes):
 
     shared = Shared()
 
-    maxcmdlength = 128
+    maxcmdlength = 1024
     query_consumed, query_published = '', ''
 
     for w in shared.workers:
