@@ -203,7 +203,7 @@ class StatSock(Process):
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
-        m = re.findall(r'w:\w+\+g:\w+', cmd.decode())
+        m = re.findall(r'w:[^+\s]+\+g:\w+', cmd.decode())
         queries = list()
 
         if m:
