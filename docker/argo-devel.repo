@@ -1,0 +1,5 @@
+[argo-devel]
+name=ARGO Development Repository - Rocky9
+baseurl=http://rpm-repo.argo.grnet.gr/ARGO/devel/rocky9/
+gpgcheck=0
+enabled=1
