@@ -27,3 +27,6 @@ docker run \
 \
 -h docker-amspub \
 --rm -ti -v /dev/log:/dev/log ipanema:5000/ams-publisher
+
+# \
+# -v "${HOME}/my_work/srce/git.ARGOeu-Metrics/argo-probe-ams-publisher":/home/user/amspub-probe-source \
