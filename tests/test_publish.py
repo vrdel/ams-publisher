@@ -92,13 +92,13 @@ def test_construct_msg_returns_partition_date_and_json_payload():
     }
 
 
-def test_publish_increments_interval_counters(monkeypatch):
+def test_publish_increments_interval_counters(mocker):
     publisher = object.__new__(Publish)
     publisher.name = "metrics"
     publisher.shared = SimpleNamespace(
         statint={"metrics": {"published": {}, "published_periodic": 0}}
     )
-    monkeypatch.setattr("ams_publisher.publish.time.time", lambda: 100)
+    mocker.patch("ams_publisher.publish.time.time", return_value=100)
 
     publisher._increm_intervalcounters(3)
     publisher._increm_intervalcounters(2)
@@ -107,7 +107,7 @@ def test_publish_increments_interval_counters(monkeypatch):
     assert publisher.shared.statint["metrics"]["published_periodic"] == 5
 
 
-def test_filepublisher_write_appends_messages_and_rotates_queue(tmp_path):
+def test_filepublisher_write_appends_messages_and_rotates_queue(mocker, tmp_path):
     publisher = object.__new__(FilePublisher)
     publisher.name = "metrics"
     publisher.pubnumloop = 2
@@ -122,7 +122,7 @@ def test_filepublisher_write_appends_messages_and_rotates_queue(tmp_path):
     publisher.shared = SimpleNamespace(
         general={"publishmsgfiledir": str(tmp_path)},
         topic={"topic": "out.txt", "bulk": 2},
-        log=SimpleNamespace(error=lambda *args: None),
+        log=SimpleNamespace(error=mocker.Mock()),
     )
 
     ok, published = publisher.write()

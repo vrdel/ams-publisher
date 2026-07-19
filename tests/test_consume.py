@@ -54,9 +54,9 @@ def make_consumer(tmp_path, names=("one", "two")):
     return consumer
 
 
-def test_consume_dirq_msgs_locks_and_buffers_until_requested_count(monkeypatch, tmp_path):
+def test_consume_dirq_msgs_locks_and_buffers_until_requested_count(mocker, tmp_path):
     consumer = make_consumer(tmp_path)
-    monkeypatch.setattr("ams_publisher.consume.time.time", lambda: 200)
+    mocker.patch("ams_publisher.consume.time.time", return_value=200)
 
     assert consumer.consume_dirq_msgs(2) is True
 

@@ -54,7 +54,7 @@ def test_parse_cmd_marks_malformed_or_excessive_lookback_as_error(cmd, expected)
     assert make_statsock().parse_cmd(cmd) == expected
 
 
-def test_get_nmsg_sums_interval_counters(monkeypatch):
+def test_get_nmsg_sums_interval_counters(mocker):
     shared = SimpleNamespace(
         statint={
             "metrics": {
@@ -68,23 +68,21 @@ def test_get_nmsg_sums_interval_counters(monkeypatch):
         }
     )
     sock = make_statsock(shared)
-    monkeypatch.setattr("ams_publisher.stats.time.time", lambda: 100)
+    mocker.patch("ams_publisher.stats.time.time", return_value=100)
 
     assert sock.get_nmsg("metrics", "published", 1) == 6
 
 
-def test_answer_formats_timestamped_results_and_key_errors(monkeypatch):
+def test_answer_formats_timestamped_results_and_key_errors(mocker):
     shared = SimpleNamespace(runtime={"started_epoch": "1234"})
     sock = make_statsock(shared)
-    calls = []
 
     def fake_get_nmsg(worker, what, nmin):
-        calls.append((worker, what, nmin))
         if worker == "missing":
             raise KeyError(worker)
         return 42
 
-    monkeypatch.setattr(sock, "get_nmsg", fake_get_nmsg)
+    get_nmsg = mocker.patch.object(sock, "get_nmsg", side_effect=fake_get_nmsg)
 
     assert sock.answer(
         [
@@ -93,45 +91,48 @@ def test_answer_formats_timestamped_results_and_key_errors(monkeypatch):
             ("missing", "consumed", "1"),
         ]
     ) == "t:1234 w:metrics+r:42 w:bad+r:error w:missing+r:error"
-    assert calls == [("metrics", "published", "60"), ("missing", "consumed", "1")]
+    assert get_nmsg.call_args_list == [
+        mocker.call("metrics", "published", "60"),
+        mocker.call("missing", "consumed", "1"),
+    ]
 
 
-def test_setup_statssocket_replaces_existing_socket_file(monkeypatch, tmp_path):
+def test_setup_statssocket_replaces_existing_socket_file(mocker, tmp_path):
     sock_path = tmp_path / "stats.sock"
     sock_path.write_text("stale")
-    calls = []
 
     class FakeSocket:
         def bind(self, path):
-            calls.append(("bind", path))
             sock_path.touch()
 
-    monkeypatch.setattr("ams_publisher.stats.STATSOCK", str(sock_path))
-    monkeypatch.setattr("ams_publisher.stats.socket.socket", lambda *args: FakeSocket())
-    monkeypatch.setattr(
+    fake_socket = FakeSocket()
+    socket_factory = mocker.patch("ams_publisher.stats.socket.socket", return_value=fake_socket)
+    chown = mocker.patch(
         "ams_publisher.stats.os.chown",
-        lambda path, uid, gid: calls.append(("chown", path, uid, gid)),
     )
+    bind = mocker.spy(fake_socket, "bind")
+    mocker.patch("ams_publisher.stats.STATSOCK", str(sock_path))
     shared = Shared({"queues": {}, "topics": {}, "general": {}})
-    shared.add_log(SimpleNamespace(error=lambda *args: None))
+    shared.add_log(SimpleNamespace(error=mocker.Mock()))
 
     sock = setup_statssocket(uid=10, gid=20)
 
     assert isinstance(sock, FakeSocket)
     assert sock_path.exists()
-    assert calls == [("bind", str(sock_path)), ("chown", str(sock_path), 10, 20)]
+    socket_factory.assert_called_once()
+    bind.assert_called_once_with(str(sock_path))
+    chown.assert_called_once_with(str(sock_path), 10, 20)
 
 
-def test_query_stats_sends_published_and_consumed_queries(monkeypatch):
-    logs = []
+def test_query_stats_sends_published_and_consumed_queries(mocker):
+    logger = SimpleNamespace(info=mocker.Mock(), error=mocker.Mock())
     Shared(
         {
             "queues": {"metrics": {}, "alarms": {}},
             "topics": {"metrics": {}, "alarms": {}},
             "general": {},
         }
-    ).add_log(SimpleNamespace(info=logs.append, error=logs.append))
-    sent = []
+    ).add_log(logger)
     responses = [
         b"t:123 w:metrics+r:7 w:alarms+r:2",
         b"t:123 w:metrics+r:8 w:alarms+r:3",
@@ -151,7 +152,7 @@ def test_query_stats_sends_published_and_consumed_queries(monkeypatch):
             self.path = path
 
         def send(self, data, max_length):
-            sent.append(data)
+            self.sent = data
 
         def recv(self, max_length):
             return self.response
@@ -159,19 +160,26 @@ def test_query_stats_sends_published_and_consumed_queries(monkeypatch):
         def close(self):
             self.closed = True
 
-    monkeypatch.setattr("ams_publisher.stats.socket.socket", FakeSocket)
+    sockets = []
+
+    def socket_factory(*args):
+        sock = FakeSocket(*args)
+        sockets.append(sock)
+        return sock
+
+    mocker.patch("ams_publisher.stats.socket.socket", side_effect=socket_factory)
 
     query_stats(15)
 
-    assert sent == [
+    assert [sock.sent for sock in sockets] == [
         b"w:metrics+g:published15 w:alarms+g:published15 ",
         b"w:metrics+g:consumed15 w:alarms+g:consumed15 ",
     ]
-    assert logs == [
-        "worker:metrics published:7",
-        "worker:alarms published:2",
-        "worker:metrics consumed:8",
-        "worker:alarms consumed:3",
+    assert logger.info.call_args_list == [
+        mocker.call("worker:metrics published:7"),
+        mocker.call("worker:alarms published:2"),
+        mocker.call("worker:metrics consumed:8"),
+        mocker.call("worker:alarms consumed:3"),
     ]
 
 
@@ -191,8 +199,8 @@ class PublishForStats(StatSig):
     )
 
 
-def test_statsig_initializes_consumer_and_publisher_counters(monkeypatch):
-    monkeypatch.setattr("ams_publisher.stats.time.time", lambda: 100)
+def test_statsig_initializes_consumer_and_publisher_counters(mocker):
+    mocker.patch("ams_publisher.stats.time.time", return_value=100)
     ConsumerForStats.shared.log.infos = []
     PublishForStats.shared.log.infos = []
     ConsumerForStats.shared.log.info = ConsumerForStats.shared.log.infos.append

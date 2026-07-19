@@ -55,14 +55,14 @@ SleepRetry = 300
 """.format(**values)
 
 
-def parse_with_body(monkeypatch, tmp_path, body):
+def parse_with_body(mocker, tmp_path, body):
     path = write_config(tmp_path, body)
-    monkeypatch.setattr(config, "get_conffile", lambda logger=None: path)
+    mocker.patch.object(config, "get_conffile", return_value=path)
     return config.parse_config()
 
 
-def test_parse_config_reads_general_queue_and_topic(monkeypatch, tmp_path):
-    confopts = parse_with_body(monkeypatch, tmp_path, base_config())
+def test_parse_config_reads_general_queue_and_topic(mocker, tmp_path):
+    confopts = parse_with_body(mocker, tmp_path, base_config())
 
     assert confopts["general"] == {
         "runasuser": "nagios",
@@ -83,11 +83,11 @@ def test_parse_config_reads_general_queue_and_topic(monkeypatch, tmp_path):
     assert confopts["topics"]["metrics-hyphen-tenant"]["avroschema"] == "/schema.avsc"
 
 
-def test_get_queue_granul_matches_directory_prefix(monkeypatch):
-    monkeypatch.setattr(
+def test_get_queue_granul_matches_directory_prefix(mocker):
+    mocker.patch.object(
         config,
         "parse_config",
-        lambda: {
+        return_value={
             "queues": {
                 "metrics": {"directory": "/var/spool/metrics/", "granularity": 60},
                 "alarms": {"directory": "/var/spool/alarms/", "granularity": 30},
@@ -142,19 +142,19 @@ def test_get_queue_granul_matches_directory_prefix(monkeypatch):
         base_config(avro="True", avro_schema=""),
     ],
 )
-def test_parse_config_exits_for_invalid_configuration(monkeypatch, tmp_path, body):
+def test_parse_config_exits_for_invalid_configuration(mocker, tmp_path, body):
     with pytest.raises(SystemExit):
-        parse_with_body(monkeypatch, tmp_path, body)
+        parse_with_body(mocker, tmp_path, body)
 
 
-def test_get_conffile_returns_first_match(monkeypatch):
-    monkeypatch.setattr(config.glob, "glob", lambda pattern: ["/etc/ams-publisher/one.conf"])
+def test_get_conffile_returns_first_match(mocker):
+    mocker.patch.object(config.glob, "glob", return_value=["/etc/ams-publisher/one.conf"])
 
     assert config.get_conffile() == "/etc/ams-publisher/one.conf"
 
 
-def test_get_conffile_exits_when_missing(monkeypatch, capsys):
-    monkeypatch.setattr(config.glob, "glob", lambda pattern: [])
+def test_get_conffile_exits_when_missing(mocker, capsys):
+    mocker.patch.object(config.glob, "glob", return_value=[])
 
     with pytest.raises(SystemExit):
         config.get_conffile()

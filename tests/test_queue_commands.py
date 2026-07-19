@@ -74,12 +74,12 @@ def test_metric_build_msg_sets_headers_body_and_text_flag():
     assert msg.text is True
 
 
-def test_seteuser_switches_effective_uid_and_gid(monkeypatch):
-    calls = []
+def test_seteuser_switches_effective_uid_and_gid(mocker):
     user = SimpleNamespace(pw_gid=123, pw_uid=456)
-    monkeypatch.setattr(alarmtoqueue.os, "setegid", lambda gid: calls.append(("gid", gid)))
-    monkeypatch.setattr(alarmtoqueue.os, "seteuid", lambda uid: calls.append(("uid", uid)))
+    setegid = mocker.patch.object(alarmtoqueue.os, "setegid")
+    seteuid = mocker.patch.object(alarmtoqueue.os, "seteuid")
 
     alarmtoqueue.seteuser(user)
 
-    assert calls == [("gid", 123), ("uid", 456)]
+    setegid.assert_called_once_with(123)
+    seteuid.assert_called_once_with(456)
