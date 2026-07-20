@@ -51,6 +51,12 @@ RUN sh -c '\
   && pip install -U setuptools==69.2.0 \
   && pip install -U poetry'
 RUN ln -s /opt/poetry-tool/bin/poetry /usr/local/bin/
+RUN python3.9 -m venv /opt/ams-publisher-venv
+RUN chown -R user /opt/ams-publisher-venv
+RUN sh -c '\
+  . /opt/ams-publisher-venv/bin/activate \
+  && pip install -U pip \
+  && pip install -U pytest pytest-mock'
 RUN passwd -d root
 VOLUME [ "/sys/fs/cgroup" ]
 RUN echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
