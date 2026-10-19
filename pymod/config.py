@@ -167,7 +167,7 @@ def parse_config(logger=None):
             sys.stderr.write(str(e) + '\n')
             raise SystemExit(1)
 
-    except (configparser.MissingSectionHeaderError, configparser.ParsingError, SystemExit) as e:
+    except (configparser.MissingSectionHeaderError, configparser.ParsingError) as e:
         if getattr(e, 'filename', False):
             if logger:
                 logger.error(e.filename + ' is not a valid configuration file')
