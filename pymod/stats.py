@@ -11,9 +11,6 @@ from threading import Thread
 from multiprocessing import Process
 from ams_publisher.shared import Shared
 
-MAXCMDLENGTH = 1024
-STATSOCK = '/run/ams-publisher/sock'
-
 
 def query_stats(last_minutes):
     def parse_result(query):
@@ -30,7 +27,9 @@ def query_stats(last_minutes):
 
     shared = Shared()
 
-    maxcmdlength = 1024
+    maxcmdlength = shared.general['statscmdlength']
+    stats_socket = shared.general['statssocket']
+    timeout = shared.general['statssockettimeout']
     query_consumed, query_published = '', ''
 
     for w in shared.workers:
@@ -42,10 +41,10 @@ def query_stats(last_minutes):
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.setblocking(0)
-        sock.settimeout(15)
+        sock.settimeout(timeout)
 
-        sock.connect(STATSOCK)
-        sock.send(query_published.encode(), maxcmdlength)
+        sock.connect(stats_socket)
+        sock.sendall(query_published.encode())
         data = sock.recv(maxcmdlength)
         for answer in data.split():
             if answer.startswith(b't:'):
@@ -56,9 +55,9 @@ def query_stats(last_minutes):
 
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.setblocking(0)
-        sock.settimeout(15)
-        sock.connect(STATSOCK)
-        sock.send(query_consumed.encode(), maxcmdlength)
+        sock.settimeout(timeout)
+        sock.connect(stats_socket)
+        sock.sendall(query_consumed.encode())
         data = sock.recv(maxcmdlength)
         for answer in data.split(b' '):
             if answer.startswith(b't:'):
@@ -68,7 +67,7 @@ def query_stats(last_minutes):
         sock.close()
 
     except socket.timeout as e:
-        shared.log.error('Socket response timeout after 15s')
+        shared.log.error('Socket response timeout after {0}s'.format(timeout))
 
     except socket.error as e:
         shared.log.error('Socket error: {0}'.format(str(e)))
@@ -79,15 +78,16 @@ def query_stats(last_minutes):
 
 def setup_statssocket(uid, gid):
     shared = Shared()
+    stats_socket = shared.general['statssocket']
 
-    if os.path.exists(STATSOCK):
-        os.unlink(STATSOCK)
+    if os.path.exists(stats_socket):
+        os.unlink(stats_socket)
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(STATSOCK)
-        os.chown(STATSOCK, uid, gid)
+        sock.bind(stats_socket)
+        os.chown(stats_socket, uid, gid)
     except socket.error as e:
-        shared.log.error('Error setting up socket: %s - %s' % (STATSOCK, str(e)))
+        shared.log.error('Error setting up socket: %s - %s' % (stats_socket, str(e)))
         raise SystemExit(1)
 
     return sock
@@ -188,18 +188,20 @@ class StatSock(Process):
         self.max_minutes_lookback = 1440
         self.shared = Shared()
         self.sock = sock
+        self.stats_socket = self.shared.general['statssocket']
+        self.maxcmdlength = self.shared.general['statscmdlength']
         self.resetth = CleanStale(events=events,
                                   minutes_lookback=self.max_minutes_lookback)
 
         try:
             self.sock.listen(1)
         except socket.error as m:
-            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (STATSOCK, repr(m)))
+            self.shared.log.error('Cannot initialize Stats socket %s - %s' % (self.stats_socket, repr(m)))
             raise SystemExit(1)
 
     def _cleanup(self):
         self.sock.close()
-        os.unlink(STATSOCK)
+        os.unlink(self.stats_socket)
         raise SystemExit(0)
 
     def parse_cmd(self, cmd):
@@ -261,11 +263,11 @@ class StatSock(Process):
                 event = self.poller.poll(float(self.shared.runtime['evsleep'] * 1000))
                 if len(event) > 0 and event[0][1] & select.POLLIN:
                     conn, addr = self.sock.accept()
-                    data = conn.recv(MAXCMDLENGTH)
+                    data = conn.recv(self.maxcmdlength)
                     q = self.parse_cmd(data)
                     if q:
                         a = self.answer(q)
-                        conn.send(a.encode(), MAXCMDLENGTH)
+                        conn.sendall(a.encode())
                 if self.events['term-stats'].is_set():
                     self.shared.log.info('Stats received SIGTERM')
                     self.events['term-stats'].clear()

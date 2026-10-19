@@ -72,6 +72,9 @@ def test_parse_config_reads_general_queue_and_topic(mocker, tmp_path):
         "publishmsgfiledir": "/published",
         "publishargomessaging": True,
         "timezone": "UTC",
+        "statssocket": "/run/ams-publisher/sock",
+        "statscmdlength": 1024,
+        "statssockettimeout": 180,
     }
     assert list(confopts["queues"]) == ["metrics-hyphen-tenant"]
     assert confopts["queues"]["metrics-hyphen-tenant"]["directory"] == "/var/spool/ams-publisher/metrics/"
@@ -81,6 +84,25 @@ def test_parse_config_reads_general_queue_and_topic(mocker, tmp_path):
     assert confopts["topics"]["metrics-hyphen-tenant"]["bulk"] == 100
     assert confopts["topics"]["metrics-hyphen-tenant"]["avro"] is True
     assert confopts["topics"]["metrics-hyphen-tenant"]["avroschema"] == "/schema.avsc"
+
+
+
+@pytest.mark.parametrize("section", ["General", "GENERAL"])
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        ("", ("/run/ams-publisher/sock", 1024, 180)),
+        ("StatsSocket = /tmp/custom.sock\nStatsCmdLength = 4096\nStatsSocketTimeout = 30",
+         ("/tmp/custom.sock", 4096, 30)),
+        ("StatsCmdLength = 2048", ("/run/ams-publisher/sock", 2048, 180)),
+    ],
+)
+def test_parse_config_optional_stats_settings(mocker, tmp_path, section, options, expected):
+    body = base_config().replace("[General]", "[{}]\n{}".format(section, options))
+    general = parse_with_body(mocker, tmp_path, body)["general"]
+
+    assert (general["statssocket"], general["statscmdlength"],
+            general["statssockettimeout"]) == expected
 
 
 def test_get_queue_granul_matches_directory_prefix(mocker):
