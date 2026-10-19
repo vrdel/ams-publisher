@@ -65,7 +65,9 @@ PublishMsgFile = False
 PublishMsgFileDir = /published
 PublishArgoMessaging = True
 TimeZone = UTC
-StatSocket = /var/run/ams-publisher/sock
+StatsSocket = /run/ams-publisher/sock
+StatsCmdLength = 1024
+StatsSocketTimeout = 180
 ```
 
 * `Host` - FQDN of ARGO Monitoring instance that will be part of formed messages dispatched to ARGO Messaging system
@@ -73,7 +75,9 @@ StatSocket = /var/run/ams-publisher/sock
 * `StatsEveryHour` - write periodic report in system logs. Example is given in [Running](Running)
 * `PublishMsgFile`, `PublishMsgFileDir` - "file publisher" that is actually only for testing purposes. If enabled, messages will not be dispatched to ARGO Messaging System, instead it will just be appended to plain text file
 * `TimeZone` - construct timestamp of messages within specified timezone
-* `StatsSocket` - query socket that is used for inspection of rates of each worker. It used by the `ams-publisher` Nagios probe.
+* `StatsSocket` - query socket used to inspect rates of each worker and by the `ams-publisher` Nagios probe. Optional; defaults to `/run/ams-publisher/sock`.
+* `StatsCmdLength` - maximum number of bytes received per statistics socket read. Optional; defaults to `1024`.
+* `StatsSocketTimeout` - statistics query socket timeout in seconds. Optional; defaults to `180`.
 
 ### Queue, Topic pair section
 
