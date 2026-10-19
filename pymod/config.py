@@ -64,7 +64,7 @@ def parse_config(logger=None):
 
             queues, topics = dict(), dict()
             for section in config.sections():
-                if section.startswith('General'):
+                if section.lower() == 'general':
                     confopts['general'] = ({'runasuser': config.get(section, 'RunAsUser')})
                     confopts['general'].update({'host': config.get(section, 'Host')})
                     confopts['general'].update({'statseveryhour': float(config.get(section, 'StatsEveryHour'))})
@@ -72,6 +72,11 @@ def parse_config(logger=None):
                     confopts['general'].update({'publishmsgfiledir': config.get(section, 'PublishMsgFileDir')})
                     confopts['general'].update({'publishargomessaging': eval(config.get(section, 'PublishArgoMessaging'))})
                     confopts['general'].update({'timezone': config.get(section, 'TimeZone')})
+                    confopts['general'].update({
+                        'statssocket': config.get(section, 'StatsSocket', fallback='/run/ams-publisher/sock'),
+                        'statscmdlength': config.getint(section, 'StatsCmdLength', fallback=1024),
+                        'statssockettimeout': config.getint(section, 'StatsSocketTimeout', fallback=180),
+                    })
                     try:
                         tz = timezone(confopts['general']['timezone'])
                     except UnknownTimeZoneError as e:

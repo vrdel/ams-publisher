@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+import select
 
 import pytest
 
@@ -111,8 +112,7 @@ def test_setup_statssocket_replaces_existing_socket_file(mocker, tmp_path):
         "ams_publisher.stats.os.chown",
     )
     bind = mocker.spy(fake_socket, "bind")
-    mocker.patch("ams_publisher.stats.STATSOCK", str(sock_path))
-    shared = Shared({"queues": {}, "topics": {}, "general": {}})
+    shared = Shared({"queues": {}, "topics": {}, "general": {"statssocket": str(sock_path)}})
     shared.add_log(SimpleNamespace(error=mocker.Mock()))
 
     sock = setup_statssocket(uid=10, gid=20)
@@ -124,13 +124,18 @@ def test_setup_statssocket_replaces_existing_socket_file(mocker, tmp_path):
     chown.assert_called_once_with(str(sock_path), 10, 20)
 
 
-def test_query_stats_sends_published_and_consumed_queries(mocker):
+@pytest.mark.parametrize(
+    ("stats_socket", "cmd_length", "timeout"),
+    [("/run/ams-publisher/sock", 1024, 180), ("/tmp/custom.sock", 4096, 30)],
+)
+def test_query_stats_sends_published_and_consumed_queries(mocker, stats_socket, cmd_length, timeout):
     logger = SimpleNamespace(info=mocker.Mock(), error=mocker.Mock())
     Shared(
         {
             "queues": {"metrics": {}, "alarms": {}},
             "topics": {"metrics": {}, "alarms": {}},
-            "general": {},
+            "general": {"statssocket": stats_socket, "statscmdlength": cmd_length,
+                        "statssockettimeout": timeout},
         }
     ).add_log(logger)
     responses = [
@@ -151,10 +156,11 @@ def test_query_stats_sends_published_and_consumed_queries(mocker):
         def connect(self, path):
             self.path = path
 
-        def send(self, data, max_length):
+        def sendall(self, data):
             self.sent = data
 
         def recv(self, max_length):
+            self.recv_length = max_length
             return self.response
 
         def close(self):
@@ -170,6 +176,10 @@ def test_query_stats_sends_published_and_consumed_queries(mocker):
     mocker.patch("ams_publisher.stats.socket.socket", side_effect=socket_factory)
 
     query_stats(15)
+
+    assert all(sock.path == stats_socket for sock in sockets)
+    assert all(sock.timeout == timeout for sock in sockets)
+    assert all(sock.recv_length == cmd_length for sock in sockets)
 
     assert [sock.sent for sock in sockets] == [
         b"w:metrics+g:published15 w:alarms+g:published15 ",
@@ -223,3 +233,32 @@ def test_statsig_initializes_consumer_and_publisher_counters(mocker):
     assert publisher.shared.statint["worker"]["published_periodic"] == 0
     assert "ConsumerForStats worker: consumed 9 msgs in 2.50 hours" in consumer.shared.log.infos
     assert "PublishForStats worker: sent 11 msgs in 2.50 hours" in publisher.shared.log.infos
+
+
+def test_statsock_uses_configured_buffer_and_cleans_up_configured_path(mocker):
+    shared = Shared({
+        "queues": {}, "topics": {},
+        "general": {"statssocket": "/tmp/custom.sock", "statscmdlength": 4096},
+    })
+    shared.runtime = {"evsleep": 0.1, "started_epoch": "123"}
+    mocker.patch("ams_publisher.stats.CleanStale")
+    poller = mocker.patch("ams_publisher.stats.select.poll").return_value
+    poller.poll.side_effect = [[(9, select.POLLIN)], KeyboardInterrupt]
+    unlink = mocker.patch("ams_publisher.stats.os.unlink")
+    conn = mocker.Mock()
+    conn.recv.return_value = b"w:metrics+g:published1"
+    listener = mocker.Mock()
+    listener.accept.return_value = (conn, None)
+    termination = mocker.Mock()
+    termination.is_set.return_value = False
+    server = StatSock({"term-stats": termination}, listener)
+    mocker.patch.object(server, "get_nmsg", return_value=42)
+
+    with pytest.raises(SystemExit) as exc:
+        server.run()
+
+    assert exc.value.code == 0
+    conn.recv.assert_called_once_with(4096)
+    conn.sendall.assert_called_once_with(b"t:123 w:metrics+r:42")
+    listener.close.assert_called_once_with()
+    unlink.assert_called_once_with("/tmp/custom.sock")
