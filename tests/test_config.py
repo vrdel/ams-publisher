@@ -104,41 +104,11 @@ def test_get_queue_granul_matches_directory_prefix(mocker):
 @pytest.mark.parametrize(
     "body",
     [
-        pytest.param(
-            base_config(extra_sections="\n[Queue_Alarms]\nDirectory = /alarms\n"),
-            marks=pytest.mark.xfail(
-                reason="parse_config currently swallows its own SystemExit for this validation",
-                strict=True,
-            ),
-        ),
-        pytest.param(
-            base_config(extra_sections="\n[Topic_Alarms]\nHost = messaging.example\n"),
-            marks=pytest.mark.xfail(
-                reason="parse_config currently swallows its own SystemExit for this validation",
-                strict=True,
-            ),
-        ),
-        pytest.param(
-            base_config(publish_msg_file="False", publish_argo="False"),
-            marks=pytest.mark.xfail(
-                reason="parse_config currently swallows its own SystemExit for this validation",
-                strict=True,
-            ),
-        ),
-        pytest.param(
-            base_config(publish_msg_file="True", publish_argo="True"),
-            marks=pytest.mark.xfail(
-                reason="parse_config currently swallows its own SystemExit for this validation",
-                strict=True,
-            ),
-        ),
-        pytest.param(
-            base_config(rate="10", bulk="6"),
-            marks=pytest.mark.xfail(
-                reason="parse_config currently swallows its own SystemExit for this validation",
-                strict=True,
-            ),
-        ),
+        base_config(extra_sections="\n[Queue_Alarms]\nDirectory = /alarms\n"),
+        base_config(extra_sections="\n[Topic_Alarms]\nHost = messaging.example\n"),
+        base_config(publish_msg_file="False", publish_argo="False"),
+        base_config(publish_msg_file="True", publish_argo="True"),
+        base_config(rate="10", bulk="6"),
         base_config(avro="True", avro_schema=""),
     ],
 )
